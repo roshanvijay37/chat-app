@@ -179,9 +179,24 @@ body {
   flex-shrink: 0;
 }
 
-.conv-info { display: flex; flex-direction: column; overflow: hidden; }
+.conv-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
 .conv-name { font-weight: 600; font-size: 0.9rem; }
 .conv-last-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.unread-badge {
+  background: #00d4aa;
+  color: #111;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
 
 /* Chat Window */
 .chat-window {

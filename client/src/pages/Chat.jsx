@@ -33,17 +33,43 @@ export default function Chat() {
 
     const handleNewMsg = (msg) => {
       setConversations((prev) =>
-        prev.map((c) =>
-          c.id === msg.conversation_id
-            ? { ...c, lastMessage: { content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id } }
-            : c
-        )
+        prev.map((c) => {
+          if (c.id !== msg.conversation_id) return c;
+          const isUnread = msg.sender_id !== user.id && activeConv?.id !== msg.conversation_id;
+          return {
+            ...c,
+            lastMessage: { content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id },
+            unreadCount: isUnread ? (c.unreadCount || 0) + 1 : c.unreadCount,
+          };
+        })
+      );
+    };
+
+    const handleStatus = ({ messageIds, status }) => {
+      if (status !== "read") return;
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.unreadCount === 0) return c;
+          return { ...c, unreadCount: Math.max(0, (c.unreadCount || 0) - messageIds.length) };
+        })
       );
     };
 
     socket.on("message:new", handleNewMsg);
-    return () => socket.off("message:new", handleNewMsg);
-  }, []);
+    socket.on("message:status", handleStatus);
+    return () => {
+      socket.off("message:new", handleNewMsg);
+      socket.off("message:status", handleStatus);
+    };
+  }, [activeConv?.id, user.id]);
+
+  // Clear unread count when selecting a conversation
+  const handleSelect = (conv) => {
+    setActiveConv(conv);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
+    );
+  };
 
   const handleNewConv = (conv) => {
     api.getConversations().then((data) => {
@@ -64,7 +90,7 @@ export default function Chat() {
         <Sidebar
           conversations={conversations}
           activeConv={activeConv}
-          onSelect={setActiveConv}
+          onSelect={handleSelect}
           onNewConv={handleNewConv}
           user={user}
           onLogout={logout}

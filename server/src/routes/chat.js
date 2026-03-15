@@ -73,10 +73,19 @@ router.get("/conversations", authMiddleware, async (req, res) => {
       .limit(1)
       .single();
 
+    // Get unread count
+    const { count: unreadCount } = await supabaseAdmin
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", convId)
+      .neq("sender_id", req.user.id)
+      .is("read_at", null);
+
     conversations.push({
       id: convId,
       participant: members?.[0]?.profiles || null,
       lastMessage: lastMsg || null,
+      unreadCount: unreadCount || 0,
     });
   }
 

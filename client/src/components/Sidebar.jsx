@@ -71,6 +71,9 @@ export default function Sidebar({
                 {c.lastMessage?.content?.slice(0, 30) || "No messages yet"}
               </span>
             </div>
+            {c.unreadCount > 0 && (
+              <span className="unread-badge">{c.unreadCount > 99 ? "99+" : c.unreadCount}</span>
+            )}
           </div>
         ))}
       </div>
