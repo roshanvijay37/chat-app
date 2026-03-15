@@ -91,8 +91,12 @@ export default function Sidebar({
           <span className="user-name">{user.display_name}</span>
         </div>
         <div className="sidebar-header-actions">
-          <button className="icon-btn" onClick={() => showNew ? resetForm() : setShowNew(true)} title="New Chat">+</button>
-          <button className="icon-btn" onClick={onLogout} title="Logout">⏻</button>
+          <button className="icon-btn" onClick={() => showNew ? resetForm() : setShowNew(true)} title="New Chat">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+          </button>
+          <button className="icon-btn" onClick={onLogout} title="Logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
       </div>
 
