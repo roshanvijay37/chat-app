@@ -75,7 +75,94 @@ function setupSocket(server) {
 
       // Broadcast to all members in the conversation room
       io.to(conversationId).emit("message:new", message);
+
+      // Check if recipient is online — if so, auto-mark delivered
+      const { data: members } = await supabaseAdmin
+        .from("conversation_members")
+        .select("user_id")
+        .eq("conversation_id", conversationId)
+        .neq("user_id", userId);
+
+      if (members) {
+        const onlineRecipient = members.some(
+          (m) => onlineUsers.has(m.user_id) && onlineUsers.get(m.user_id).size > 0
+        );
+        if (onlineRecipient) {
+          const now = new Date().toISOString();
+          await supabaseAdmin
+            .from("messages")
+            .update({ delivered_at: now })
+            .eq("id", message.id);
+          io.to(conversationId).emit("message:status", {
+            messageIds: [message.id],
+            status: "delivered",
+            timestamp: now,
+          });
+        }
+      }
+
       callback?.({ message });
+    });
+
+    // Mark messages as delivered when user connects
+    (async () => {
+      const { data: undelivered } = await supabaseAdmin
+        .from("messages")
+        .select("id, conversation_id, sender_id")
+        .in("conversation_id", (memberships || []).map((m) => m.conversation_id))
+        .neq("sender_id", userId)
+        .is("delivered_at", null);
+
+      if (undelivered?.length) {
+        const ids = undelivered.map((m) => m.id);
+        const now = new Date().toISOString();
+        await supabaseAdmin
+          .from("messages")
+          .update({ delivered_at: now })
+          .in("id", ids);
+
+        // Notify senders grouped by conversation
+        const byConv = {};
+        for (const m of undelivered) {
+          (byConv[m.conversation_id] ||= []).push(m.id);
+        }
+        for (const [convId, msgIds] of Object.entries(byConv)) {
+          io.to(convId).emit("message:status", { messageIds: msgIds, status: "delivered", timestamp: now });
+        }
+      }
+    })();
+
+    // Handle delivery acknowledgement for individual messages
+    socket.on("message:delivered", async ({ messageIds, conversationId }) => {
+      if (!messageIds?.length) return;
+      const now = new Date().toISOString();
+      await supabaseAdmin
+        .from("messages")
+        .update({ delivered_at: now })
+        .in("id", messageIds)
+        .is("delivered_at", null);
+
+      io.to(conversationId).emit("message:status", { messageIds, status: "delivered", timestamp: now });
+    });
+
+    // Handle read receipts
+    socket.on("message:read", async ({ conversationId }) => {
+      const { data: unread } = await supabaseAdmin
+        .from("messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .neq("sender_id", userId)
+        .is("read_at", null);
+
+      if (!unread?.length) return;
+      const ids = unread.map((m) => m.id);
+      const now = new Date().toISOString();
+      await supabaseAdmin
+        .from("messages")
+        .update({ read_at: now, delivered_at: now })
+        .in("id", ids);
+
+      io.to(conversationId).emit("message:status", { messageIds: ids, status: "read", timestamp: now });
     });
 
     // Typing indicators

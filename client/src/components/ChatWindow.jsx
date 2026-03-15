@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "../services/api";
 import { getSocket } from "../services/socket";
 
+function MessageStatus({ msg }) {
+  if (msg.read_at) return <span className="msg-status read" title="Read">✓✓</span>;
+  if (msg.delivered_at) return <span className="msg-status delivered" title="Delivered">✓✓</span>;
+  return <span className="msg-status sent" title="Sent">✓</span>;
+}
+
 export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -16,6 +22,13 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     });
   }, [conversation?.id]);
 
+  // Mark messages as read when conversation is opened or new messages arrive
+  useEffect(() => {
+    if (!conversation) return;
+    const socket = getSocket();
+    if (socket) socket.emit("message:read", { conversationId: conversation.id });
+  }, [conversation?.id, messages]);
+
   useEffect(() => {
     const socket = getSocket();
     if (!socket || !conversation) return;
@@ -26,6 +39,17 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
       if (msg.conversation_id === conversation.id) {
         setMessages((prev) => [...prev, msg]);
       }
+    };
+
+    const handleStatus = ({ messageIds, status, timestamp }) => {
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (!messageIds.includes(m.id)) return m;
+          if (status === "read") return { ...m, delivered_at: m.delivered_at || timestamp, read_at: timestamp };
+          if (status === "delivered") return { ...m, delivered_at: timestamp };
+          return m;
+        })
+      );
     };
 
     const handleTypingStart = ({ userId, conversationId }) => {
@@ -39,11 +63,13 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     };
 
     socket.on("message:new", handleNew);
+    socket.on("message:status", handleStatus);
     socket.on("typing:start", handleTypingStart);
     socket.on("typing:stop", handleTypingStop);
 
     return () => {
       socket.off("message:new", handleNew);
+      socket.off("message:status", handleStatus);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
@@ -105,6 +131,7 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
+              {msg.sender_id === currentUser.id && <MessageStatus msg={msg} />}
             </span>
           </div>
         ))}
