@@ -67,7 +67,7 @@ router.get("/conversations", authMiddleware, async (req, res) => {
     // Get last message
     const { data: lastMsg } = await supabaseAdmin
       .from("messages")
-      .select("content, created_at, sender_id")
+      .select("id, content, created_at, sender_id, deleted_at")
       .eq("conversation_id", convId)
       .order("created_at", { ascending: false })
       .limit(1)

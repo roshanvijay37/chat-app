@@ -12,6 +12,9 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [menuMsgId, setMenuMsgId] = useState(null);
+  const [editingMsg, setEditingMsg] = useState(null);
+  const [editText, setEditText] = useState("");
   const bottomRef = useRef(null);
   const typingTimeout = useRef(null);
 
@@ -62,14 +65,30 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
         setTyping(false);
     };
 
+    const handleUpdated = ({ messageId, content, edited_at }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, content, edited_at } : m))
+      );
+    };
+
+    const handleDeleted = ({ messageId, deleted_at }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, content: null, deleted_at } : m))
+      );
+    };
+
     socket.on("message:new", handleNew);
     socket.on("message:status", handleStatus);
+    socket.on("message:updated", handleUpdated);
+    socket.on("message:deleted", handleDeleted);
     socket.on("typing:start", handleTypingStart);
     socket.on("typing:stop", handleTypingStop);
 
     return () => {
       socket.off("message:new", handleNew);
       socket.off("message:status", handleStatus);
+      socket.off("message:updated", handleUpdated);
+      socket.off("message:deleted", handleDeleted);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
@@ -89,6 +108,36 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     });
     socket.emit("typing:stop", { conversationId: conversation.id });
     setInput("");
+  };
+
+  const handleEdit = (msg) => {
+    setEditingMsg(msg);
+    setEditText(msg.content);
+    setMenuMsgId(null);
+  };
+
+  const submitEdit = (e) => {
+    e.preventDefault();
+    if (!editText.trim() || editText.trim() === editingMsg.content) {
+      setEditingMsg(null);
+      return;
+    }
+    const socket = getSocket();
+    socket.emit("message:edit", {
+      messageId: editingMsg.id,
+      content: editText.trim(),
+      conversationId: conversation.id,
+    });
+    setEditingMsg(null);
+  };
+
+  const handleDelete = (msg) => {
+    setMenuMsgId(null);
+    const socket = getSocket();
+    socket.emit("message:delete", {
+      messageId: msg.id,
+      conversationId: conversation.id,
+    });
   };
 
   const handleInputChange = (e) => {
@@ -119,25 +168,54 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
         <span>{conversation.participant?.display_name || "Unknown"}</span>
       </div>
 
-      <div className="messages">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`message ${msg.sender_id === currentUser.id ? "mine" : "theirs"}`}
-          >
-            <p>{msg.content}</p>
-            <span className="msg-time">
-              {new Date(msg.created_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-              {msg.sender_id === currentUser.id && <MessageStatus msg={msg} />}
-            </span>
-          </div>
-        ))}
+      <div className="messages" onClick={() => setMenuMsgId(null)}>
+        {messages.map((msg) => {
+          const isMine = msg.sender_id === currentUser.id;
+          const isDeleted = !!msg.deleted_at;
+          return (
+            <div
+              key={msg.id}
+              className={`message ${isMine ? "mine" : "theirs"} ${isDeleted ? "deleted" : ""}`}
+              onContextMenu={(e) => {
+                if (!isMine || isDeleted) return;
+                e.preventDefault();
+                setMenuMsgId(menuMsgId === msg.id ? null : msg.id);
+              }}
+            >
+              {isDeleted ? (
+                <p className="deleted-text">🚫 This message was deleted</p>
+              ) : (
+                <p>{msg.content}</p>
+              )}
+              <span className="msg-time">
+                {msg.edited_at && !isDeleted && <span className="edited-label">edited</span>}
+                {new Date(msg.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                {isMine && !isDeleted && <MessageStatus msg={msg} />}
+              </span>
+              {menuMsgId === msg.id && (
+                <div className="msg-menu">
+                  <button onClick={() => handleEdit(msg)}>✏️ Edit</button>
+                  <button onClick={() => handleDelete(msg)}>🗑️ Delete</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
         {typing && <div className="typing-indicator">typing...</div>}
         <div ref={bottomRef} />
       </div>
+
+      {editingMsg && (
+        <form className="edit-bar" onSubmit={submitEdit}>
+          <span>Editing message</span>
+          <input value={editText} onChange={(e) => setEditText(e.target.value)} autoFocus />
+          <button type="submit">✓</button>
+          <button type="button" onClick={() => setEditingMsg(null)}>✕</button>
+        </form>
+      )}
 
       <form className="message-input" onSubmit={sendMessage}>
         <input

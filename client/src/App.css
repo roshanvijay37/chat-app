@@ -275,6 +275,74 @@ body {
 .msg-status.read { color: #00d4aa; opacity: 1; }
 .message.mine .msg-status.read { color: #065f46; }
 
+.message { position: relative; }
+
+.message.deleted { opacity: 0.6; }
+.deleted-text { font-style: italic; color: #888; }
+.message.mine .deleted-text { color: #065f46; }
+
+.edited-label {
+  font-style: italic;
+  margin-right: 0.2rem;
+}
+
+.msg-menu {
+  position: absolute;
+  top: -0.5rem;
+  right: 0;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 10;
+  display: flex;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.msg-menu button {
+  background: none;
+  border: none;
+  color: #e1e1e1;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.msg-menu button:hover { background: #2a2a3e; }
+
+.edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  background: #16213e;
+  border-top: 1px solid #00d4aa;
+  font-size: 0.85rem;
+}
+
+.edit-bar span { color: #00d4aa; font-weight: 600; white-space: nowrap; }
+
+.edit-bar input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: #e1e1e1;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.edit-bar button {
+  background: none;
+  border: none;
+  color: #e1e1e1;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+}
+
 .typing-indicator {
   font-size: 0.8rem;
   color: #00d4aa;

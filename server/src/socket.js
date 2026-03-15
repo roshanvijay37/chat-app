@@ -145,6 +145,54 @@ function setupSocket(server) {
       io.to(conversationId).emit("message:status", { messageIds, status: "delivered", timestamp: now });
     });
 
+    // Handle message edit
+    socket.on("message:edit", async ({ messageId, content, conversationId }, callback) => {
+      if (!content?.trim()) return callback?.({ error: "Content required" });
+
+      const { data: msg } = await supabaseAdmin
+        .from("messages")
+        .select("sender_id, deleted_at")
+        .eq("id", messageId)
+        .single();
+
+      if (!msg || msg.sender_id !== userId) return callback?.({ error: "Not allowed" });
+      if (msg.deleted_at) return callback?.({ error: "Message is deleted" });
+
+      const now = new Date().toISOString();
+      const { error } = await supabaseAdmin
+        .from("messages")
+        .update({ content: content.trim(), edited_at: now })
+        .eq("id", messageId);
+
+      if (error) return callback?.({ error: error.message });
+
+      io.to(conversationId).emit("message:updated", { messageId, content: content.trim(), edited_at: now });
+      callback?.({ success: true });
+    });
+
+    // Handle message delete
+    socket.on("message:delete", async ({ messageId, conversationId }, callback) => {
+      const { data: msg } = await supabaseAdmin
+        .from("messages")
+        .select("sender_id, deleted_at")
+        .eq("id", messageId)
+        .single();
+
+      if (!msg || msg.sender_id !== userId) return callback?.({ error: "Not allowed" });
+      if (msg.deleted_at) return callback?.({ error: "Already deleted" });
+
+      const now = new Date().toISOString();
+      const { error } = await supabaseAdmin
+        .from("messages")
+        .update({ content: null, deleted_at: now })
+        .eq("id", messageId);
+
+      if (error) return callback?.({ error: error.message });
+
+      io.to(conversationId).emit("message:deleted", { messageId, deleted_at: now });
+      callback?.({ success: true });
+    });
+
     // Handle read receipts
     socket.on("message:read", async ({ conversationId }) => {
       const { data: unread } = await supabaseAdmin

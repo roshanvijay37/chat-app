@@ -68,7 +68,9 @@ export default function Sidebar({
             <div className="conv-info">
               <span className="conv-name">{c.participant?.display_name || "Unknown"}</span>
               <span className="conv-last-msg">
-                {c.lastMessage?.content?.slice(0, 30) || "No messages yet"}
+                {c.lastMessage?.deleted_at
+                  ? "🚫 Message deleted"
+                  : c.lastMessage?.content?.slice(0, 30) || "No messages yet"}
               </span>
             </div>
             {c.unreadCount > 0 && (

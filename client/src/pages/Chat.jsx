@@ -38,7 +38,7 @@ export default function Chat() {
           const isUnread = msg.sender_id !== user.id && activeConv?.id !== msg.conversation_id;
           return {
             ...c,
-            lastMessage: { content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id },
+            lastMessage: { id: msg.id, content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id },
             unreadCount: isUnread ? (c.unreadCount || 0) + 1 : c.unreadCount,
           };
         })
@@ -57,9 +57,34 @@ export default function Chat() {
 
     socket.on("message:new", handleNewMsg);
     socket.on("message:status", handleStatus);
+
+    const handleMsgUpdated = ({ messageId, content }) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.lastMessage && c.lastMessage.id === messageId
+            ? { ...c, lastMessage: { ...c.lastMessage, content } }
+            : c
+        )
+      );
+    };
+
+    const handleMsgDeleted = ({ messageId }) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.lastMessage && c.lastMessage.id === messageId
+            ? { ...c, lastMessage: { ...c.lastMessage, content: null, deleted_at: true } }
+            : c
+        )
+      );
+    };
+
+    socket.on("message:updated", handleMsgUpdated);
+    socket.on("message:deleted", handleMsgDeleted);
     return () => {
       socket.off("message:new", handleNewMsg);
       socket.off("message:status", handleStatus);
+      socket.off("message:updated", handleMsgUpdated);
+      socket.off("message:deleted", handleMsgDeleted);
     };
   }, [activeConv?.id, user.id]);
 
