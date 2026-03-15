@@ -90,11 +90,23 @@ export default function Chat() {
 
     socket.on("message:updated", handleMsgUpdated);
     socket.on("message:deleted", handleMsgDeleted);
+
+    const handleGroupCreated = () => {
+      api.getConversations().then((data) => {
+        if (Array.isArray(data)) setConversations(data);
+      });
+    };
+
+    socket.on("group:created", handleGroupCreated);
+    socket.on("group:added", handleGroupCreated);
+
     return () => {
       socket.off("message:new", handleNewMsg);
       socket.off("message:status", handleStatus);
       socket.off("message:updated", handleMsgUpdated);
       socket.off("message:deleted", handleMsgDeleted);
+      socket.off("group:created", handleGroupCreated);
+      socket.off("group:added", handleGroupCreated);
     };
   }, [user.id]);
 

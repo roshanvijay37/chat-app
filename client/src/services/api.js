@@ -49,4 +49,28 @@ export const api = {
       headers: headers(false),
       body: JSON.stringify({ email, otp }),
     }).then((r) => r.json()),
+
+  createGroup: (name, memberIds) =>
+    fetch(`${API}/chat/groups`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ name, memberIds }),
+    }).then((r) => r.json()),
+
+  addGroupMembers: (conversationId, userIds) =>
+    fetch(`${API}/chat/groups/${conversationId}/members`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ userIds }),
+    }).then((r) => r.json()),
+
+  getGroupMembers: (conversationId) =>
+    fetch(`${API}/chat/groups/${conversationId}/members`, {
+      headers: headers(),
+    }).then((r) => r.json()),
+
+  findUser: (q) =>
+    fetch(`${API}/chat/find-user?q=${encodeURIComponent(q)}`, {
+      headers: headers(),
+    }).then((r) => r.json()),
 };

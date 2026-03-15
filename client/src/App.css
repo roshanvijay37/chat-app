@@ -151,6 +151,105 @@ body {
   cursor: pointer;
 }
 
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.mode-tabs button {
+  flex: 1;
+  padding: 0.4rem;
+  background: #16213e;
+  color: #888;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mode-tabs button.active {
+  background: #00d4aa;
+  color: #111;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.search-row input { flex: 1; }
+
+.search-row button {
+  padding: 0.4rem 0.6rem;
+  background: #2a2a3e;
+  border: 1px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.5rem;
+  background: #16213e;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.search-result button {
+  padding: 0.3rem 0.6rem;
+  background: #00d4aa;
+  color: #111;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.group-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: #6c5ce7;
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+}
+
+.member-chip button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.form-submit {
+  padding: 0.5rem;
+  background: #00d4aa;
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
 .conversation-list { flex: 1; overflow-y: auto; }
 
 .conversation-item {
@@ -177,6 +276,11 @@ body {
   font-weight: 700;
   font-size: 1rem;
   flex-shrink: 0;
+}
+
+.conv-avatar.group {
+  background: #6c5ce7;
+  color: #fff;
 }
 
 .conv-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
@@ -223,6 +327,27 @@ body {
 }
 
 .chat-header span { font-weight: 600; }
+
+.chat-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header-info span:first-child { font-weight: 600; }
+
+.chat-header-sub {
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 400 !important;
+}
+
+.msg-sender {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6c5ce7;
+  margin-bottom: 0.15rem;
+}
 
 .messages {
   flex: 1;

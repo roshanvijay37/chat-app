@@ -12,11 +12,13 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState(new Set());
   const [menuMsgId, setMenuMsgId] = useState(null);
   const [editingMsg, setEditingMsg] = useState(null);
   const [editText, setEditText] = useState("");
   const bottomRef = useRef(null);
   const typingTimeout = useRef(null);
+  const isGroup = conversation?.type === "group";
 
   useEffect(() => {
     if (!conversation) return;
@@ -56,13 +58,27 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     };
 
     const handleTypingStart = ({ userId, conversationId }) => {
-      if (conversationId === conversation.id && userId !== currentUser.id)
+      if (conversationId === conversation.id && userId !== currentUser.id) {
+        if (isGroup) {
+          setTypingUsers((prev) => new Set(prev).add(userId));
+        }
         setTyping(true);
+      }
     };
 
     const handleTypingStop = ({ userId, conversationId }) => {
-      if (conversationId === conversation.id && userId !== currentUser.id)
-        setTyping(false);
+      if (conversationId === conversation.id && userId !== currentUser.id) {
+        if (isGroup) {
+          setTypingUsers((prev) => {
+            const next = new Set(prev);
+            next.delete(userId);
+            if (next.size === 0) setTyping(false);
+            return next;
+          });
+        } else {
+          setTyping(false);
+        }
+      }
     };
 
     const handleUpdated = ({ messageId, content, edited_at }) => {
@@ -158,14 +174,31 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     );
   }
 
+  const headerName = isGroup
+    ? conversation.name
+    : conversation.participant?.display_name || "Unknown";
+  const headerInitial = isGroup
+    ? conversation.name?.[0]?.toUpperCase() || "G"
+    : conversation.participant?.display_name?.[0]?.toUpperCase() || "?";
+  const headerSub = isGroup ? `${conversation.members?.length || 0} members` : null;
+
+  // Build a map of member names for group sender display
+  const memberMap = {};
+  if (isGroup && conversation.members) {
+    conversation.members.forEach((m) => { memberMap[m.id] = m.display_name; });
+  }
+
   return (
     <div className="chat-window">
       <div className="chat-header">
         {onBack && <button className="back-btn" onClick={onBack}>←</button>}
-        <div className="conv-avatar">
-          {conversation.participant?.display_name?.[0]?.toUpperCase() || "?"}
+        <div className={`conv-avatar ${isGroup ? "group" : ""}`}>
+          {headerInitial}
         </div>
-        <span>{conversation.participant?.display_name || "Unknown"}</span>
+        <div className="chat-header-info">
+          <span>{headerName}</span>
+          {headerSub && <span className="chat-header-sub">{headerSub}</span>}
+        </div>
       </div>
 
       <div className="messages" onClick={() => setMenuMsgId(null)}>
@@ -185,7 +218,14 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
               {isDeleted ? (
                 <p className="deleted-text">🚫 This message was deleted</p>
               ) : (
-                <p>{msg.content}</p>
+                <>
+                  {isGroup && !isMine && (
+                    <span className="msg-sender">
+                      {msg.profiles?.display_name || memberMap[msg.sender_id] || "Unknown"}
+                    </span>
+                  )}
+                  <p>{msg.content}</p>
+                </>
               )}
               <span className="msg-time">
                 {msg.edited_at && !isDeleted && <span className="edited-label">edited</span>}

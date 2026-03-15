@@ -43,6 +43,116 @@ router.post("/conversations", authMiddleware, async (req, res) => {
   res.status(201).json({ conversation: conv });
 });
 
+// POST /chat/groups - Create a group conversation
+router.post("/groups", authMiddleware, async (req, res) => {
+  const { name, memberIds } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: "Group name required" });
+  if (!Array.isArray(memberIds) || memberIds.length < 1)
+    return res.status(400).json({ error: "At least 1 other member required" });
+
+  const uniqueIds = [...new Set([req.user.id, ...memberIds])];
+
+  const { data: conv, error: convErr } = await supabaseAdmin
+    .from("conversations")
+    .insert({ type: "group", name: name.trim(), created_by: req.user.id })
+    .select()
+    .single();
+
+  if (convErr) return res.status(500).json({ error: convErr.message });
+
+  const { error: memErr } = await supabaseAdmin
+    .from("conversation_members")
+    .insert(uniqueIds.map((id) => ({ conversation_id: conv.id, user_id: id })));
+
+  if (memErr) return res.status(500).json({ error: memErr.message });
+
+  // Notify members via socket so they join the room
+  const io = req.app.get("io");
+  if (io) {
+    const { data: members } = await supabaseAdmin
+      .from("conversation_members")
+      .select("user_id, profiles(id, display_name, email, avatar_url)")
+      .eq("conversation_id", conv.id);
+
+    const groupData = { ...conv, members: members?.map((m) => m.profiles) || [] };
+    uniqueIds.forEach((uid) => io.to(`user:${uid}`).emit("group:created", groupData));
+  }
+
+  res.status(201).json({ conversation: conv });
+});
+
+// POST /chat/groups/:conversationId/members - Add members to group
+router.post("/groups/:conversationId/members", authMiddleware, async (req, res) => {
+  const { conversationId } = req.params;
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds) || !userIds.length)
+    return res.status(400).json({ error: "userIds required" });
+
+  // Verify conversation is a group and requester is a member
+  const { data: conv } = await supabaseAdmin
+    .from("conversations")
+    .select("type")
+    .eq("id", conversationId)
+    .single();
+
+  if (!conv || conv.type !== "group")
+    return res.status(400).json({ error: "Not a group conversation" });
+
+  const { data: membership } = await supabaseAdmin
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", req.user.id)
+    .single();
+
+  if (!membership) return res.status(403).json({ error: "Not a member" });
+
+  // Get existing members to avoid duplicates
+  const { data: existing } = await supabaseAdmin
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId);
+
+  const existingIds = new Set(existing?.map((m) => m.user_id) || []);
+  const newIds = userIds.filter((id) => !existingIds.has(id));
+
+  if (!newIds.length) return res.json({ added: 0 });
+
+  const { error } = await supabaseAdmin
+    .from("conversation_members")
+    .insert(newIds.map((id) => ({ conversation_id: conversationId, user_id: id })));
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Notify new members via socket
+  const io = req.app.get("io");
+  if (io) newIds.forEach((uid) => io.to(`user:${uid}`).emit("group:added", { conversationId }));
+
+  res.json({ added: newIds.length });
+});
+
+// GET /chat/groups/:conversationId/members - Get group members
+router.get("/groups/:conversationId/members", authMiddleware, async (req, res) => {
+  const { conversationId } = req.params;
+
+  const { data: membership } = await supabaseAdmin
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", req.user.id)
+    .single();
+
+  if (!membership) return res.status(403).json({ error: "Not a member" });
+
+  const { data: members, error } = await supabaseAdmin
+    .from("conversation_members")
+    .select("user_id, profiles(id, display_name, email, avatar_url)")
+    .eq("conversation_id", conversationId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(members?.map((m) => m.profiles) || []);
+});
+
 // GET /chat/conversations - List user's conversations
 router.get("/conversations", authMiddleware, async (req, res) => {
   const { data: memberships, error: memErr } = await supabaseAdmin
@@ -55,14 +165,22 @@ router.get("/conversations", authMiddleware, async (req, res) => {
   const convIds = memberships.map((m) => m.conversation_id);
   if (convIds.length === 0) return res.json([]);
 
-  // Get conversations with the other member's profile
+  // Get conversations with members
   const conversations = [];
   for (const convId of convIds) {
+    // Get conversation metadata
+    const { data: convData } = await supabaseAdmin
+      .from("conversations")
+      .select("type, name")
+      .eq("id", convId)
+      .single();
+
+    const isGroup = convData?.type === "group";
+
     const { data: members } = await supabaseAdmin
       .from("conversation_members")
       .select("user_id, profiles(id, display_name, email, avatar_url)")
-      .eq("conversation_id", convId)
-      .neq("user_id", req.user.id);
+      .eq("conversation_id", convId);
 
     // Get last message
     const { data: lastMsg } = await supabaseAdmin
@@ -81,12 +199,25 @@ router.get("/conversations", authMiddleware, async (req, res) => {
       .neq("sender_id", req.user.id)
       .is("read_at", null);
 
-    conversations.push({
-      id: convId,
-      participant: members?.[0]?.profiles || null,
-      lastMessage: lastMsg || null,
-      unreadCount: unreadCount || 0,
-    });
+    if (isGroup) {
+      conversations.push({
+        id: convId,
+        type: "group",
+        name: convData.name,
+        members: members?.map((m) => m.profiles) || [],
+        lastMessage: lastMsg || null,
+        unreadCount: unreadCount || 0,
+      });
+    } else {
+      const other = members?.find((m) => m.user_id !== req.user.id);
+      conversations.push({
+        id: convId,
+        type: "direct",
+        participant: other?.profiles || null,
+        lastMessage: lastMsg || null,
+        unreadCount: unreadCount || 0,
+      });
+    }
   }
 
   // Sort by last message time

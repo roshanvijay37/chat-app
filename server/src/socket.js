@@ -29,6 +29,9 @@ function setupSocket(server) {
     if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
     onlineUsers.get(userId).add(socket.id);
 
+    // Join personal room for notifications (group invites etc.)
+    socket.join(`user:${userId}`);
+
     // Join all conversation rooms
     const { data: memberships } = await supabaseAdmin
       .from("conversation_members")
@@ -41,6 +44,11 @@ function setupSocket(server) {
 
     // Broadcast online status to contacts
     socket.broadcast.emit("user:online", { userId });
+
+    // Handle being added to a group
+    socket.on("group:added", ({ conversationId }) => {
+      socket.join(conversationId);
+    });
 
     // Join a new conversation room (called when a new conversation is created)
     socket.on("conversation:join", (conversationId) => {
