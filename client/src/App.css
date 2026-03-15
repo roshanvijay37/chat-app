@@ -105,6 +105,7 @@ body {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #2a2a3e;
+  gap: 0.5rem;
 }
 
 .sidebar-user {
@@ -112,9 +113,24 @@ body {
   align-items: center;
   gap: 0.6rem;
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .sidebar-user:hover { opacity: 0.8; }
+
+.user-name {
+  font-weight: 600;
+  color: #00d4aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  flex-shrink: 0;
+}
 
 .sidebar-avatar {
   width: 34px;
@@ -132,8 +148,6 @@ body {
   font-weight: 700;
   font-size: 0.9rem;
 }
-
-.user-name { font-weight: 600; color: #00d4aa; }
 
 .icon-btn {
   background: none;

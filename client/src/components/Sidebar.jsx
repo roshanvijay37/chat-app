@@ -90,7 +90,7 @@ export default function Sidebar({
           )}
           <span className="user-name">{user.display_name}</span>
         </div>
-        <div>
+        <div className="sidebar-header-actions">
           <button className="icon-btn" onClick={() => showNew ? resetForm() : setShowNew(true)} title="New Chat">+</button>
           <button className="icon-btn" onClick={onLogout} title="Logout">⏻</button>
         </div>
