@@ -24,7 +24,7 @@ app.get("/health", (_, res) => res.json({ status: "ok" }));
 // Serve client build
 const clientPath = path.join(__dirname, "../../client/dist");
 app.use(express.static(clientPath));
-app.get("*", (req, res) => {
+app.get("{*path}", (req, res) => {
   res.sendFile(path.join(clientPath, "index.html"));
 });
 
