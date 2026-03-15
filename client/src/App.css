@@ -709,7 +709,7 @@ body {
   background: #1a1a2e;
 }
 
-.message-input input {
+.message-input input[type="text"] {
   flex: 1;
   padding: 0.7rem 1rem;
   border: 1px solid #333;
@@ -720,9 +720,9 @@ body {
   outline: none;
 }
 
-.message-input input:focus { border-color: #00d4aa; }
+.message-input input[type="text"]:focus { border-color: #00d4aa; }
 
-.message-input button {
+.message-input button[type="submit"] {
   padding: 0.7rem 1.5rem;
   background: #00d4aa;
   color: #111;
@@ -732,7 +732,7 @@ body {
   cursor: pointer;
 }
 
-.message-input button:hover { background: #00b894; }
+.message-input button[type="submit"]:hover { background: #00b894; }
 
 .loading {
   display: flex;
