@@ -109,9 +109,23 @@ router.post("/verify-otp", async (req, res) => {
 
 // POST /auth/login
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ error: "Email and password required" });
+  const { identifier, password } = req.body;
+  if (!identifier || !password)
+    return res.status(400).json({ error: "Email/username and password required" });
+
+  let email = identifier;
+
+  // If not an email, look up the email by username
+  if (!identifier.includes("@")) {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .ilike("display_name", identifier)
+      .single();
+
+    if (!profile) return res.status(400).json({ error: "User not found" });
+    email = profile.email;
+  }
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -154,16 +168,36 @@ router.put("/profile", authMiddleware, (req, res, next) => {
     const name = displayName.trim();
     if (!name) return res.status(400).json({ error: "Display name cannot be empty" });
 
-    // Check uniqueness (excluding self)
-    const { data: existing } = await supabaseAdmin
+    // Get current profile to check cooldown
+    const { data: currentProfile } = await supabaseAdmin
       .from("profiles")
-      .select("id")
-      .ilike("display_name", name)
-      .neq("id", req.user.id)
+      .select("display_name, display_name_changed_at")
+      .eq("id", req.user.id)
       .single();
 
-    if (existing) return res.status(400).json({ error: "Username already taken" });
-    updates.display_name = name;
+    // Only enforce cooldown if the name is actually changing
+    if (currentProfile && name.toLowerCase() !== currentProfile.display_name?.toLowerCase()) {
+      if (currentProfile.display_name_changed_at) {
+        const lastChanged = new Date(currentProfile.display_name_changed_at);
+        const daysSince = (Date.now() - lastChanged.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSince < 7) {
+          const daysLeft = Math.ceil(7 - daysSince);
+          return res.status(400).json({ error: `You can change your username again in ${daysLeft} day${daysLeft > 1 ? "s" : ""}` });
+        }
+      }
+
+      // Check uniqueness (excluding self)
+      const { data: existing } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .ilike("display_name", name)
+        .neq("id", req.user.id)
+        .single();
+
+      if (existing) return res.status(400).json({ error: "Username already taken" });
+      updates.display_name = name;
+      updates.display_name_changed_at = new Date().toISOString();
+    }
   }
 
   if (bio !== undefined) updates.bio = bio.trim().slice(0, 150);

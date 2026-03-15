@@ -663,6 +663,12 @@ body {
   margin-top: -0.5rem;
 }
 
+.cooldown-hint {
+  font-size: 0.75rem;
+  color: #f0a500;
+  margin-top: -0.4rem;
+}
+
 .avatar-edit {
   position: relative;
   width: 80px;

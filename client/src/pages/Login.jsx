@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -13,7 +13,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    const res = await login(email, password);
+    const res = await login(identifier, password);
     if (res.error) setError(res.error);
     else navigate("/");
   };
@@ -25,10 +25,10 @@ export default function Login() {
         {error && <p className="error">{error}</p>}
         <form onSubmit={handleSubmit}>
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Email or Username"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
           />
           <div className="password-field">

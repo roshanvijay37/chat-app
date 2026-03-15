@@ -16,11 +16,11 @@ export const api = {
       body: JSON.stringify({ email, password, displayName }),
     }).then((r) => r.json()),
 
-  login: (email, password) =>
+  login: (identifier, password) =>
     fetch(`${API}/auth/login`, {
       method: "POST",
       headers: headers(false),
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     }).then((r) => r.json()),
 
   getMe: () =>

@@ -69,6 +69,14 @@ export default function ProfileModal({ onClose }) {
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
+          {user.display_name_changed_at && (() => {
+            const daysSince = (Date.now() - new Date(user.display_name_changed_at).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSince < 7) {
+              const daysLeft = Math.ceil(7 - daysSince);
+              return <p className="cooldown-hint">Username can be changed again in {daysLeft} day{daysLeft > 1 ? "s" : ""}</p>;
+            }
+            return null;
+          })()}
           <textarea
             placeholder="Bio (max 150 chars)"
             value={bio}

@@ -24,8 +24,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (email, password) => {
-    const data = await api.login(email, password);
+  const login = async (identifier, password) => {
+    const data = await api.login(identifier, password);
     if (data.error) return data;
     localStorage.setItem("token", data.session.access_token);
     connectSocket(data.session.access_token);
