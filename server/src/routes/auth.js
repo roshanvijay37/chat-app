@@ -25,6 +25,22 @@ router.post("/signup", async (req, res) => {
     display_name: displayName,
   });
 
+  res.json({ user: data.user, session: data.session, needsVerification: !data.session });
+});
+
+// POST /auth/verify-otp
+router.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp)
+    return res.status(400).json({ error: "Email and OTP required" });
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: otp,
+    type: "signup",
+  });
+
+  if (error) return res.status(400).json({ error: error.message });
   res.json({ user: data.user, session: data.session });
 });
 

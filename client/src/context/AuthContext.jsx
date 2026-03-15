@@ -46,6 +46,18 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const verifyOtp = async (email, otp) => {
+    const data = await api.verifyOtp(email, otp);
+    if (data.error) return data;
+    if (data.session) {
+      localStorage.setItem("token", data.session.access_token);
+      connectSocket(data.session.access_token);
+      const profile = await api.getMe();
+      setUser(profile);
+    }
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     disconnectSocket();
@@ -53,7 +65,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, verifyOtp, logout }}>
       {children}
     </AuthContext.Provider>
   );

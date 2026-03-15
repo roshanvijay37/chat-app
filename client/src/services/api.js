@@ -42,4 +42,11 @@ export const api = {
     fetch(`${API}/chat/messages/${conversationId}`, {
       headers: headers(),
     }).then((r) => r.json()),
+
+  verifyOtp: (email, otp) =>
+    fetch(`${API}/auth/verify-otp`, {
+      method: "POST",
+      headers: headers(false),
+      body: JSON.stringify({ email, otp }),
+    }).then((r) => r.json()),
 };
