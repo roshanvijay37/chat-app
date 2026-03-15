@@ -468,6 +468,69 @@ body {
   padding: 0.2rem 0.4rem;
 }
 
+.img-msg {
+  display: block;
+  max-width: 250px;
+  border-radius: 8px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.img-msg img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.file-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  text-decoration: none;
+  color: #e1e1e1;
+}
+
+.file-msg.mine {
+  background: rgba(0,0,0,0.12);
+  color: #111;
+}
+
+.file-icon { font-size: 1.5rem; }
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.attach-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  line-height: 1;
+}
+
+.attach-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .typing-indicator {
   font-size: 0.8rem;
   color: #00d4aa;

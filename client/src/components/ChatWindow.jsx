@@ -8,6 +8,40 @@ function MessageStatus({ msg }) {
   return <span className="msg-status sent" title="Sent">✓</span>;
 }
 
+function parseFileContent(content) {
+  try { return JSON.parse(content); }
+  catch { return null; }
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function FileMessage({ msg, isMine }) {
+  const file = parseFileContent(msg.content);
+  if (!file) return <p>{msg.content}</p>;
+
+  if (msg.type === "image") {
+    return (
+      <a href={file.url} target="_blank" rel="noopener noreferrer" className="img-msg">
+        <img src={file.url} alt={file.fileName} loading="lazy" />
+      </a>
+    );
+  }
+
+  return (
+    <a href={file.url} target="_blank" rel="noopener noreferrer" className={`file-msg ${isMine ? "mine" : ""}`}>
+      <span className="file-icon">📄</span>
+      <span className="file-details">
+        <span className="file-name">{file.fileName}</span>
+        <span className="file-size">{formatFileSize(file.fileSize)}</span>
+      </span>
+    </a>
+  );
+}
+
 export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -16,8 +50,10 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [menuMsgId, setMenuMsgId] = useState(null);
   const [editingMsg, setEditingMsg] = useState(null);
   const [editText, setEditText] = useState("");
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
   const typingTimeout = useRef(null);
+  const fileInputRef = useRef(null);
   const isGroup = conversation?.type === "group";
 
   useEffect(() => {
@@ -156,6 +192,16 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     });
   };
 
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    fileInputRef.current.value = "";
+    setUploading(true);
+    const res = await api.uploadFile(conversation.id, file);
+    setUploading(false);
+    if (res.error) alert(res.error);
+  };
+
   const handleInputChange = (e) => {
     setInput(e.target.value);
     const socket = getSocket();
@@ -224,7 +270,11 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
                       {msg.profiles?.display_name || memberMap[msg.sender_id] || "Unknown"}
                     </span>
                   )}
-                  <p>{msg.content}</p>
+                  {msg.type === "image" || msg.type === "file" ? (
+                    <FileMessage msg={msg} isMine={isMine} />
+                  ) : (
+                    <p>{msg.content}</p>
+                  )}
                 </>
               )}
               <span className="msg-time">
@@ -237,7 +287,7 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
               </span>
               {menuMsgId === msg.id && (
                 <div className="msg-menu">
-                  <button onClick={() => handleEdit(msg)}>✏️ Edit</button>
+                  {msg.type === "text" && <button onClick={() => handleEdit(msg)}>✏️ Edit</button>}
                   <button onClick={() => handleDelete(msg)}>🗑️ Delete</button>
                 </div>
               )}
@@ -258,6 +308,16 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
       )}
 
       <form className="message-input" onSubmit={sendMessage}>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          style={{ display: "none" }}
+          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.zip"
+        />
+        <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+          {uploading ? "⏳" : "📎"}
+        </button>
         <input
           type="text"
           placeholder="Type a message..."

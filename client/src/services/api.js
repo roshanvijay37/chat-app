@@ -73,4 +73,15 @@ export const api = {
     fetch(`${API}/chat/find-user?q=${encodeURIComponent(q)}`, {
       headers: headers(),
     }).then((r) => r.json()),
+
+  uploadFile: (conversationId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("conversationId", conversationId);
+    return fetch(`${API}/chat/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+    }).then((r) => r.json());
+  },
 };

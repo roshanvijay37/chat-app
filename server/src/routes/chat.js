@@ -1,8 +1,28 @@
 const express = require("express");
+const multer = require("multer");
 const { supabaseAdmin } = require("../config/supabase");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = new Set([
+  "image/jpeg", "image/png", "image/gif", "image/webp",
+  "application/pdf",
+  "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain", "text/csv",
+  "application/zip",
+]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (_, file, cb) => {
+    if (ALLOWED_TYPES.has(file.mimetype)) cb(null, true);
+    else cb(new Error("File type not allowed"));
+  },
+});
 
 // POST /chat/conversations - Start a 1-on-1 conversation
 router.post("/conversations", authMiddleware, async (req, res) => {
@@ -185,7 +205,7 @@ router.get("/conversations", authMiddleware, async (req, res) => {
     // Get last message
     const { data: lastMsg } = await supabaseAdmin
       .from("messages")
-      .select("id, content, created_at, sender_id, deleted_at")
+      .select("id, content, created_at, sender_id, deleted_at, type")
       .eq("conversation_id", convId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -260,6 +280,65 @@ router.post("/messages", authMiddleware, async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
 
   // Emit via Socket.IO for real-time delivery
+  const io = req.app.get("io");
+  if (io) io.to(conversationId).emit("message:new", message);
+
+  res.status(201).json(message);
+});
+
+// POST /chat/upload - Upload a file and send as message
+router.post("/upload", authMiddleware, (req, res, next) => {
+  upload.single("file")(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  const { conversationId } = req.body;
+  if (!req.file || !conversationId)
+    return res.status(400).json({ error: "file and conversationId required" });
+
+  // Verify membership
+  const { data: member } = await supabaseAdmin
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", req.user.id)
+    .single();
+
+  if (!member) return res.status(403).json({ error: "Not a member" });
+
+  const ext = req.file.originalname.split(".").pop();
+  const filePath = `${conversationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const { error: uploadErr } = await supabaseAdmin.storage
+    .from("chat-files")
+    .upload(filePath, req.file.buffer, { contentType: req.file.mimetype });
+
+  if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+
+  const { data: urlData } = supabaseAdmin.storage.from("chat-files").getPublicUrl(filePath);
+
+  const isImage = req.file.mimetype.startsWith("image/");
+  const fileInfo = JSON.stringify({
+    url: urlData.publicUrl,
+    fileName: req.file.originalname,
+    fileSize: req.file.size,
+    mimeType: req.file.mimetype,
+  });
+
+  const { data: message, error: msgErr } = await supabaseAdmin
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: req.user.id,
+      content: fileInfo,
+      type: isImage ? "image" : "file",
+    })
+    .select("*, profiles:sender_id(display_name, avatar_url)")
+    .single();
+
+  if (msgErr) return res.status(500).json({ error: msgErr.message });
+
   const io = req.app.get("io");
   if (io) io.to(conversationId).emit("message:new", message);
 

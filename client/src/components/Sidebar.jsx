@@ -153,7 +153,11 @@ export default function Sidebar({
           const display = getConvDisplay(c);
           const lastMsgPreview = c.lastMessage?.deleted_at
             ? "🚫 Message deleted"
-            : c.lastMessage?.content?.slice(0, 30) || "No messages yet";
+            : c.lastMessage?.type === "image"
+              ? "🖼️ Photo"
+              : c.lastMessage?.type === "file"
+                ? "📄 File"
+                : c.lastMessage?.content?.slice(0, 30) || "No messages yet";
           const senderPrefix = c.type === "group" && c.lastMessage?.sender_name
             ? `${c.lastMessage.sender_name}: `
             : "";

@@ -44,7 +44,7 @@ export default function Chat() {
           const isUnread = msg.sender_id !== user.id && !isActive;
           return {
             ...c,
-            lastMessage: { id: msg.id, content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id },
+            lastMessage: { id: msg.id, content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id, type: msg.type },
             unreadCount: isUnread ? (c.unreadCount || 0) + 1 : c.unreadCount,
           };
         });
