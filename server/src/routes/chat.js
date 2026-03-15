@@ -126,15 +126,16 @@ router.post("/messages", authMiddleware, async (req, res) => {
   res.status(201).json(message);
 });
 
-// GET /chat/find-user - Find a user by email
+// GET /chat/find-user - Find a user by email or username
 router.get("/find-user", authMiddleware, async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ error: "Email required" });
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: "Search query required" });
 
+  const isEmail = q.includes("@");
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("id, display_name, email")
-    .eq("email", email)
+    .ilike(isEmail ? "email" : "display_name", isEmail ? q : q)
     .single();
 
   if (error || !data) return res.status(404).json({ error: "User not found" });

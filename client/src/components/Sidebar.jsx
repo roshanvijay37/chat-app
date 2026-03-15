@@ -9,7 +9,7 @@ export default function Sidebar({
   user,
   onLogout,
 }) {
-  const [email, setEmail] = useState("");
+  const [query, setQuery] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
 
@@ -18,7 +18,7 @@ export default function Sidebar({
     setError("");
     // We need a way to find user by email — let's use the backend
     const API = import.meta.env.VITE_API_URL ?? "";
-    const res = await fetch(`${API}/chat/find-user?email=${email}`, {
+    const res = await fetch(`${API}/chat/find-user?q=${encodeURIComponent(query)}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
     const data = await res.json();
@@ -28,7 +28,7 @@ export default function Sidebar({
     if (conv.error) return setError(conv.error);
     onNewConv(conv.conversation);
     setShowNew(false);
-    setEmail("");
+    setQuery("");
   };
 
   return (
@@ -44,10 +44,10 @@ export default function Sidebar({
       {showNew && (
         <form className="new-chat-form" onSubmit={handleNewChat}>
           <input
-            type="email"
-            placeholder="Enter user's email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Enter email or username"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             required
           />
           <button type="submit">Start Chat</button>

@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState("signup");
@@ -66,7 +67,7 @@ export default function Signup() {
         <form onSubmit={handleSignup}>
           <input
             type="text"
-            placeholder="Display Name"
+            placeholder="Username (unique)"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             required
@@ -78,14 +79,19 @@ export default function Signup() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <input
-            type="password"
-            placeholder="Password (min 6 chars)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
+          <div className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password (min 6 chars)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+            <span className="eye-toggle" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+          </div>
           <button type="submit">Sign Up</button>
         </form>
         <p>

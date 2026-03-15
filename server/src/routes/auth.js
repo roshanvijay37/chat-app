@@ -10,6 +10,15 @@ router.post("/signup", async (req, res) => {
   if (!email || !password || !displayName)
     return res.status(400).json({ error: "All fields required" });
 
+  // Check if username is taken
+  const { data: existing } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .ilike("display_name", displayName)
+    .single();
+
+  if (existing) return res.status(400).json({ error: "Username already taken" });
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
