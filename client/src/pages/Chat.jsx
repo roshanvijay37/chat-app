@@ -55,6 +55,9 @@ export default function Chat() {
     });
   };
 
+  const showSidebar = !isMobile || !activeConv;
+  const showChat = !isMobile || activeConv;
+
   return (
     <div className="chat-layout">
       {showSidebar && (
