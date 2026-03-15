@@ -295,3 +295,30 @@ body {
   color: #00d4aa;
   font-size: 1.2rem;
 }
+
+/* Mobile */
+@media (max-width: 600px) {
+  .chat-layout { flex-direction: column; }
+
+  .sidebar {
+    width: 100%;
+    height: 100vh;
+    border-right: none;
+  }
+
+  .chat-window {
+    height: 100vh;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    color: #00d4aa;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0.4rem;
+  }
+
+  .auth-card { width: 90%; padding: 1.5rem; }
+  .message { max-width: 80%; }
+}

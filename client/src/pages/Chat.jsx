@@ -5,10 +5,21 @@ import { getSocket } from "../services/socket";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(window.innerWidth <= 600);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth <= 600);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return mobile;
+}
+
 export default function Chat() {
   const { user, logout } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     api.getConversations().then((data) => {
@@ -16,7 +27,6 @@ export default function Chat() {
     });
   }, []);
 
-  // Listen for new messages to update sidebar
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
@@ -47,15 +57,23 @@ export default function Chat() {
 
   return (
     <div className="chat-layout">
-      <Sidebar
-        conversations={conversations}
-        activeConv={activeConv}
-        onSelect={setActiveConv}
-        onNewConv={handleNewConv}
-        user={user}
-        onLogout={logout}
-      />
-      <ChatWindow conversation={activeConv} currentUser={user} />
+      {showSidebar && (
+        <Sidebar
+          conversations={conversations}
+          activeConv={activeConv}
+          onSelect={setActiveConv}
+          onNewConv={handleNewConv}
+          user={user}
+          onLogout={logout}
+        />
+      )}
+      {showChat && (
+        <ChatWindow
+          conversation={activeConv}
+          currentUser={user}
+          onBack={isMobile ? () => setActiveConv(null) : null}
+        />
+      )}
     </div>
   );
 }

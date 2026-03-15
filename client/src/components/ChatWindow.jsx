@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "../services/api";
 import { getSocket } from "../services/socket";
 
-export default function ChatWindow({ conversation, currentUser }) {
+export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -86,6 +86,7 @@ export default function ChatWindow({ conversation, currentUser }) {
   return (
     <div className="chat-window">
       <div className="chat-header">
+        {onBack && <button className="back-btn" onClick={onBack}>←</button>}
         <div className="conv-avatar">
           {conversation.participant?.display_name?.[0]?.toUpperCase() || "?"}
         </div>
