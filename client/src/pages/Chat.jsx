@@ -4,6 +4,7 @@ import { api } from "../services/api";
 import { getSocket } from "../services/socket";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
+import ProfileModal from "../components/ProfileModal";
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(window.innerWidth <= 600);
@@ -19,6 +20,7 @@ export default function Chat() {
   const { user, logout } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -141,6 +143,7 @@ export default function Chat() {
           onNewConv={handleNewConv}
           user={user}
           onLogout={logout}
+          onOpenProfile={() => setShowProfile(true)}
         />
       )}
       {showChat && (
@@ -150,6 +153,7 @@ export default function Chat() {
           onBack={isMobile ? () => setActiveConv(null) : null}
         />
       )}
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
     </div>
   );
 }

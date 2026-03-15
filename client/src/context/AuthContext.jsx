@@ -64,8 +64,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const refreshProfile = async () => {
+    const profile = await api.getMe();
+    if (profile.id) setUser(profile);
+    return profile;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, verifyOtp, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, verifyOtp, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

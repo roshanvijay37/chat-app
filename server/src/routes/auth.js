@@ -1,10 +1,20 @@
 const express = require("express");
+const multer = require("multer");
 const { supabase, supabaseAdmin } = require("../config/supabase");
 const { Resend } = require("resend");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only images allowed"));
+  },
+});
 
 // In-memory OTP store (use Redis in production)
 const otpStore = new Map();
@@ -128,6 +138,66 @@ router.get("/me", authMiddleware, async (req, res) => {
 router.post("/logout", authMiddleware, async (req, res) => {
   await supabase.auth.signOut();
   res.json({ message: "Logged out" });
+});
+
+// PUT /auth/profile - Update profile (display name, bio, avatar)
+router.put("/profile", authMiddleware, (req, res, next) => {
+  avatarUpload.single("avatar")(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  const { displayName, bio } = req.body;
+  const updates = {};
+
+  if (displayName !== undefined) {
+    const name = displayName.trim();
+    if (!name) return res.status(400).json({ error: "Display name cannot be empty" });
+
+    // Check uniqueness (excluding self)
+    const { data: existing } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("display_name", name)
+      .neq("id", req.user.id)
+      .single();
+
+    if (existing) return res.status(400).json({ error: "Username already taken" });
+    updates.display_name = name;
+  }
+
+  if (bio !== undefined) updates.bio = bio.trim().slice(0, 150);
+
+  // Handle avatar upload
+  if (req.file) {
+    const ext = req.file.originalname.split(".").pop();
+    const filePath = `${req.user.id}/avatar.${ext}`;
+
+    const { error: uploadErr } = await supabaseAdmin.storage
+      .from("avatars")
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+
+    const { data: urlData } = supabaseAdmin.storage.from("avatars").getPublicUrl(filePath);
+    updates.avatar_url = `${urlData.publicUrl}?t=${Date.now()}`;
+  }
+
+  if (Object.keys(updates).length === 0)
+    return res.status(400).json({ error: "Nothing to update" });
+
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .update(updates)
+    .eq("id", req.user.id)
+    .select("*")
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
 module.exports = router;

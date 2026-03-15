@@ -234,13 +234,19 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     conversation.members.forEach((m) => { memberMap[m.id] = m.display_name; });
   }
 
+  const headerAvatarUrl = isGroup ? null : conversation.participant?.avatar_url;
+
   return (
     <div className="chat-window">
       <div className="chat-header">
         {onBack && <button className="back-btn" onClick={onBack}>←</button>}
-        <div className={`conv-avatar ${isGroup ? "group" : ""}`}>
-          {headerInitial}
-        </div>
+        {headerAvatarUrl ? (
+          <img src={headerAvatarUrl} alt="" className={`conv-avatar-img ${isGroup ? "group" : ""}`} />
+        ) : (
+          <div className={`conv-avatar ${isGroup ? "group" : ""}`}>
+            {headerInitial}
+          </div>
+        )}
         <div className="chat-header-info">
           <span>{headerName}</span>
           {headerSub && <span className="chat-header-sub">{headerSub}</span>}

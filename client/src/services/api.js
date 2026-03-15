@@ -26,6 +26,13 @@ export const api = {
   getMe: () =>
     fetch(`${API}/auth/me`, { headers: headers() }).then((r) => r.json()),
 
+  updateProfile: (formData) =>
+    fetch(`${API}/auth/profile`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+    }).then((r) => r.json()),
+
   getConversations: () =>
     fetch(`${API}/chat/conversations`, { headers: headers() }).then((r) =>
       r.json()

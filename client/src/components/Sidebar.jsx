@@ -8,6 +8,7 @@ export default function Sidebar({
   onNewConv,
   user,
   onLogout,
+  onOpenProfile,
 }) {
   const [query, setQuery] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -68,20 +69,27 @@ export default function Sidebar({
       return {
         name: c.name || "Group",
         initial: c.name?.[0]?.toUpperCase() || "G",
-        subtitle: `${c.members?.length || 0} members`,
+        avatarUrl: null,
       };
     }
     return {
       name: c.participant?.display_name || "Unknown",
       initial: c.participant?.display_name?.[0]?.toUpperCase() || "?",
-      subtitle: null,
+      avatarUrl: c.participant?.avatar_url || null,
     };
   };
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <span className="user-name">{user.display_name}</span>
+        <div className="sidebar-user" onClick={onOpenProfile}>
+          {user.avatar_url ? (
+            <img src={user.avatar_url} alt="" className="sidebar-avatar" />
+          ) : (
+            <div className="sidebar-avatar placeholder">{user.display_name?.[0]?.toUpperCase() || "?"}</div>
+          )}
+          <span className="user-name">{user.display_name}</span>
+        </div>
         <div>
           <button className="icon-btn" onClick={() => showNew ? resetForm() : setShowNew(true)} title="New Chat">+</button>
           <button className="icon-btn" onClick={onLogout} title="Logout">⏻</button>
@@ -167,9 +175,13 @@ export default function Sidebar({
               className={`conversation-item ${activeConv?.id === c.id ? "active" : ""}`}
               onClick={() => onSelect(c)}
             >
-              <div className={`conv-avatar ${c.type === "group" ? "group" : ""}`}>
-                {display.initial}
-              </div>
+              {display.avatarUrl ? (
+                <img src={display.avatarUrl} alt="" className={`conv-avatar-img ${c.type === "group" ? "group" : ""}`} />
+              ) : (
+                <div className={`conv-avatar ${c.type === "group" ? "group" : ""}`}>
+                  {display.initial}
+                </div>
+              )}
               <div className="conv-info">
                 <span className="conv-name">{display.name}</span>
                 <span className="conv-last-msg">{senderPrefix}{lastMsgPreview}</span>
