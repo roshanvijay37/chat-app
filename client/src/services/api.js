@@ -91,4 +91,10 @@ export const api = {
       body: formData,
     }).then((r) => r.json());
   },
+
+  deleteConversation: (conversationId) =>
+    fetch(`${API}/chat/conversations/${conversationId}`, {
+      method: "DELETE",
+      headers: headers(),
+    }).then((r) => r.json()),
 };

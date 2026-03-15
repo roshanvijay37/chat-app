@@ -9,6 +9,7 @@ export default function Sidebar({
   user,
   onLogout,
   onOpenProfile,
+  onDeleteConv,
 }) {
   const [query, setQuery] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -17,6 +18,7 @@ export default function Sidebar({
   const [groupName, setGroupName] = useState("");
   const [groupMembers, setGroupMembers] = useState([]);
   const [searchResult, setSearchResult] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
 
   const resetForm = () => {
     setShowNew(false);
@@ -160,7 +162,7 @@ export default function Sidebar({
         </div>
       )}
 
-      <div className="conversation-list">
+      <div className="conversation-list" onClick={() => setContextMenu(null)}>
         {conversations.map((c) => {
           const display = getConvDisplay(c);
           const lastMsgPreview = c.lastMessage?.deleted_at
@@ -177,7 +179,11 @@ export default function Sidebar({
             <div
               key={c.id}
               className={`conversation-item ${activeConv?.id === c.id ? "active" : ""}`}
-              onClick={() => onSelect(c)}
+              onClick={() => { setContextMenu(null); onSelect(c); }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu(contextMenu === c.id ? null : c.id);
+              }}
             >
               {display.avatarUrl ? (
                 <img src={display.avatarUrl} alt="" className={`conv-avatar-img ${c.type === "group" ? "group" : ""}`} />
@@ -192,6 +198,17 @@ export default function Sidebar({
               </div>
               {c.unreadCount > 0 && (
                 <span className="unread-badge">{c.unreadCount > 99 ? "99+" : c.unreadCount}</span>
+              )}
+              {contextMenu === c.id && (
+                <div className="conv-context-menu">
+                  <button onClick={(e) => {
+                    e.stopPropagation();
+                    setContextMenu(null);
+                    onDeleteConv(c);
+                  }}>
+                    {c.type === "group" ? "🚪 Leave Group" : "🗑️ Delete Chat"}
+                  </button>
+                </div>
               )}
             </div>
           );

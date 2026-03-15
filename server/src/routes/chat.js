@@ -395,4 +395,32 @@ router.get("/messages/:conversationId", authMiddleware, async (req, res) => {
   res.json(messages);
 });
 
+// DELETE /chat/conversations/:conversationId - Leave/delete a conversation
+router.delete("/conversations/:conversationId", authMiddleware, async (req, res) => {
+  const { conversationId } = req.params;
+
+  // Remove user from conversation
+  const { error: delErr } = await supabaseAdmin
+    .from("conversation_members")
+    .delete()
+    .eq("conversation_id", conversationId)
+    .eq("user_id", req.user.id);
+
+  if (delErr) return res.status(500).json({ error: delErr.message });
+
+  // Check if any members remain
+  const { count } = await supabaseAdmin
+    .from("conversation_members")
+    .select("user_id", { count: "exact", head: true })
+    .eq("conversation_id", conversationId);
+
+  // If no members left, clean up messages and conversation
+  if (count === 0) {
+    await supabaseAdmin.from("messages").delete().eq("conversation_id", conversationId);
+    await supabaseAdmin.from("conversations").delete().eq("id", conversationId);
+  }
+
+  res.json({ success: true });
+});
+
 module.exports = router;

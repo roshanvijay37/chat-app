@@ -130,6 +130,15 @@ export default function Chat() {
     });
   };
 
+  const handleDeleteConv = async (conv) => {
+    const label = conv.type === "group" ? "leave this group" : "delete this chat";
+    if (!window.confirm(`Are you sure you want to ${label}?`)) return;
+    const res = await api.deleteConversation(conv.id);
+    if (res.error) return alert(res.error);
+    setConversations((prev) => prev.filter((c) => c.id !== conv.id));
+    if (activeConv?.id === conv.id) setActiveConv(null);
+  };
+
   const showSidebar = !isMobile || !activeConv;
   const showChat = !isMobile || activeConv;
 
@@ -144,6 +153,7 @@ export default function Chat() {
           user={user}
           onLogout={logout}
           onOpenProfile={() => setShowProfile(true)}
+          onDeleteConv={handleDeleteConv}
         />
       )}
       {showChat && (
