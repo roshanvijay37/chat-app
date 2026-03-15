@@ -17,7 +17,7 @@ export default function Sidebar({
     e.preventDefault();
     setError("");
     // We need a way to find user by email — let's use the backend
-    const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    const API = import.meta.env.VITE_API_URL ?? "";
     const res = await fetch(`${API}/chat/find-user?email=${email}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
