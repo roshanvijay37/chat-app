@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const path = require("path");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
@@ -19,6 +20,13 @@ app.use("/auth", authRoutes);
 app.use("/chat", chatRoutes);
 
 app.get("/health", (_, res) => res.json({ status: "ok" }));
+
+// Serve client build
+const clientPath = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientPath));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientPath, "index.html"));
+});
 
 const server = http.createServer(app);
 const io = setupSocket(server);
