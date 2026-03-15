@@ -94,6 +94,7 @@ function setupSocket(server) {
             .update({ delivered_at: now })
             .eq("id", message.id);
           io.to(conversationId).emit("message:status", {
+            conversationId,
             messageIds: [message.id],
             status: "delivered",
             timestamp: now,
@@ -127,7 +128,7 @@ function setupSocket(server) {
           (byConv[m.conversation_id] ||= []).push(m.id);
         }
         for (const [convId, msgIds] of Object.entries(byConv)) {
-          io.to(convId).emit("message:status", { messageIds: msgIds, status: "delivered", timestamp: now });
+          io.to(convId).emit("message:status", { conversationId: convId, messageIds: msgIds, status: "delivered", timestamp: now });
         }
       }
     })();
@@ -142,7 +143,7 @@ function setupSocket(server) {
         .in("id", messageIds)
         .is("delivered_at", null);
 
-      io.to(conversationId).emit("message:status", { messageIds, status: "delivered", timestamp: now });
+      io.to(conversationId).emit("message:status", { conversationId, messageIds, status: "delivered", timestamp: now });
     });
 
     // Handle message edit
@@ -210,7 +211,7 @@ function setupSocket(server) {
         .update({ read_at: now, delivered_at: now })
         .in("id", ids);
 
-      io.to(conversationId).emit("message:status", { messageIds: ids, status: "read", timestamp: now });
+      io.to(conversationId).emit("message:status", { conversationId, messageIds: ids, status: "read", timestamp: now });
     });
 
     // Typing indicators

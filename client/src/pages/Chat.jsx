@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { getSocket } from "../services/socket";
@@ -27,31 +27,41 @@ export default function Chat() {
     });
   }, []);
 
+  const activeConvRef = useRef(null);
+  useEffect(() => {
+    activeConvRef.current = activeConv;
+  }, [activeConv]);
+
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
     const handleNewMsg = (msg) => {
-      setConversations((prev) =>
-        prev.map((c) => {
+      setConversations((prev) => {
+        const updated = prev.map((c) => {
           if (c.id !== msg.conversation_id) return c;
-          const isUnread = msg.sender_id !== user.id && activeConv?.id !== msg.conversation_id;
+          const isActive = activeConvRef.current?.id === msg.conversation_id;
+          const isUnread = msg.sender_id !== user.id && !isActive;
           return {
             ...c,
             lastMessage: { id: msg.id, content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id },
             unreadCount: isUnread ? (c.unreadCount || 0) + 1 : c.unreadCount,
           };
-        })
-      );
+        });
+        return updated.sort((a, b) => {
+          const timeA = a.lastMessage?.created_at || "0";
+          const timeB = b.lastMessage?.created_at || "0";
+          return timeB.localeCompare(timeA);
+        });
+      });
     };
 
-    const handleStatus = ({ messageIds, status }) => {
+    const handleStatus = ({ conversationId, status }) => {
       if (status !== "read") return;
       setConversations((prev) =>
-        prev.map((c) => {
-          if (c.unreadCount === 0) return c;
-          return { ...c, unreadCount: Math.max(0, (c.unreadCount || 0) - messageIds.length) };
-        })
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, unreadCount: 0 } : c
+        )
       );
     };
 
@@ -86,7 +96,7 @@ export default function Chat() {
       socket.off("message:updated", handleMsgUpdated);
       socket.off("message:deleted", handleMsgDeleted);
     };
-  }, [activeConv?.id, user.id]);
+  }, [user.id]);
 
   // Clear unread count when selecting a conversation
   const handleSelect = (conv) => {
