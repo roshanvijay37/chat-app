@@ -181,25 +181,33 @@ function setupSocket(server) {
 
     // Handle message delete
     socket.on("message:delete", async ({ messageId, conversationId }, callback) => {
-      const { data: msg } = await supabaseAdmin
-        .from("messages")
-        .select("sender_id, deleted_at")
-        .eq("id", messageId)
-        .single();
+      try {
+        const { data: msg } = await supabaseAdmin
+          .from("messages")
+          .select("sender_id, deleted_at")
+          .eq("id", messageId)
+          .single();
 
-      if (!msg || msg.sender_id !== userId) return callback?.({ error: "Not allowed" });
-      if (msg.deleted_at) return callback?.({ error: "Already deleted" });
+        if (!msg || msg.sender_id !== userId) return callback?.({ error: "Not allowed" });
+        if (msg.deleted_at) return callback?.({ error: "Already deleted" });
 
-      const now = new Date().toISOString();
-      const { error } = await supabaseAdmin
-        .from("messages")
-        .update({ content: null, deleted_at: now })
-        .eq("id", messageId);
+        const now = new Date().toISOString();
+        const { error } = await supabaseAdmin
+          .from("messages")
+          .update({ content: "", deleted_at: now })
+          .eq("id", messageId);
 
-      if (error) return callback?.({ error: error.message });
+        if (error) {
+          console.error("message:delete DB error:", error);
+          return callback?.({ error: error.message });
+        }
 
-      io.to(conversationId).emit("message:deleted", { messageId, deleted_at: now });
-      callback?.({ success: true });
+        io.to(conversationId).emit("message:deleted", { messageId, deleted_at: now });
+        callback?.({ success: true });
+      } catch (err) {
+        console.error("message:delete error:", err);
+        callback?.({ error: "Server error" });
+      }
     });
 
     // Handle read receipts

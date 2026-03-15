@@ -189,6 +189,8 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     socket.emit("message:delete", {
       messageId: msg.id,
       conversationId: conversation.id,
+    }, (res) => {
+      if (res?.error) console.error("Delete failed:", res.error);
     });
   };
 
@@ -292,7 +294,7 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
                 {isMine && !isDeleted && <MessageStatus msg={msg} />}
               </span>
               {menuMsgId === msg.id && (
-                <div className="msg-menu">
+                <div className="msg-menu" onClick={(e) => e.stopPropagation()}>
                   {msg.type === "text" && <button onClick={() => handleEdit(msg)}>✏️ Edit</button>}
                   <button onClick={() => handleDelete(msg)}>🗑️ Delete</button>
                 </div>
