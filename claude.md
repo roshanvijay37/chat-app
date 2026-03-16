@@ -8,35 +8,38 @@ Real-time chat application. Repo: `github.com/roshanvijay37/chat-app`. Deployed 
 ## Project Structure
 ```
 Chat/
-├── client/                    # React SPA (Vite)
+├── client/                        # React SPA (Vite) — Web frontend
 │   └── src/
 │       ├── components/
-│       │   ├── ChatWindow.jsx  # Messages, file/image rendering, edit/delete, typing indicators
-│       │   ├── Sidebar.jsx     # Conversation list, avatars, unread badges, new chat form, context menu
-│       │   └── ProfileModal.jsx # Edit profile (avatar, display name with cooldown, bio)
+│       │   ├── ChatWindow.jsx      # Messages, file/image rendering, edit/delete, typing, reactions, SVG read receipts
+│       │   ├── Sidebar.jsx         # Conversation list, avatars, unread badges, new chat form, context menu, theme toggle
+│       │   ├── ProfileModal.jsx    # Edit own profile (avatar, display name with cooldown, bio)
+│       │   └── ViewProfileModal.jsx # Read-only profile view (avatar, name, bio) for other users
 │       ├── pages/
-│       │   ├── Chat.jsx        # Main page — conversations state, socket listeners, activeConv with useRef
-│       │   ├── Login.jsx       # Login with identifier (email or username)
-│       │   └── Signup.jsx      # Signup with OTP verification flow
+│       │   ├── Chat.jsx            # Main page — conversations state, socket listeners, activeConv with useRef, viewProfile state
+│       │   ├── Login.jsx           # Login with identifier (email or username)
+│       │   └── Signup.jsx          # Signup with OTP verification flow
 │       ├── services/
-│       │   ├── api.js          # All REST API calls
-│       │   └── socket.js       # Socket.IO client singleton
+│       │   ├── api.js              # All REST API calls (including getProfile)
+│       │   └── socket.js           # Socket.IO client singleton
 │       ├── context/
-│       │   └── AuthContext.jsx  # Auth state — login, signup, verifyOtp, logout, refreshProfile
-│       ├── App.jsx             # Routes: /login, /signup, / (protected)
-│       └── App.css             # Full dark theme, responsive
+│       │   ├── AuthContext.jsx      # Auth state — login, signup, verifyOtp, logout, refreshProfile
+│       │   └── ThemeContext.jsx     # Light/dark theme toggle, persisted in localStorage
+│       ├── App.jsx                 # Routes: /login, /signup, / (protected). Wrapped in ThemeProvider + AuthProvider
+│       └── App.css                 # WhatsApp-style theme with CSS variables, light (default) + dark mode
 ├── server/
 │   └── src/
-│       ├── index.js            # Express setup, CORS (GET/POST/PUT/DELETE), static serving, Socket.IO
-│       ├── socket.js           # All socket handlers (message CRUD, delivery/read, typing, online tracking)
+│       ├── index.js                # Express setup, CORS (GET/POST/PUT/DELETE), static serving, Socket.IO
+│       ├── socket.js               # All socket handlers (message CRUD, delivery/read, typing, online tracking, reactions)
 │       ├── routes/
-│       │   ├── auth.js         # signup (OTP), verify-otp, login (email/username), /me, logout, PUT /profile
-│       │   └── chat.js         # conversations CRUD, groups CRUD, messages, file upload (multer), find-user, delete conv
+│       │   ├── auth.js             # signup (OTP), verify-otp, login (email/username), /me, logout, PUT /profile
+│       │   └── chat.js             # conversations CRUD, groups CRUD, messages (with reactions), file upload, find-user, profile/:userId, delete conv
 │       ├── config/
-│       │   └── supabase.js     # Two clients: anon (supabase) + service key (supabaseAdmin)
+│       │   └── supabase.js         # Two clients: anon (supabase) + service key (supabaseAdmin)
 │       └── middleware/
-│           └── auth.js         # JWT auth via supabase.auth.getUser
-└── package.json               # Root scripts: build, start, dev
+│           └── auth.js             # JWT auth via supabase.auth.getUser
+├── mobile/                         # PLANNED — React Native + Expo (not yet created)
+└── package.json                    # Root scripts: build, start, dev
 ```
 
 ## Database Schema (Supabase PostgreSQL)
@@ -47,7 +50,9 @@ Chat/
 
 **conversation_members**: `conversation_id` (FK), `user_id` (FK) — composite PK
 
-**messages**: `id` (uuid, PK), `conversation_id` (FK), `sender_id` (FK), `content` (text, possibly NOT NULL — use empty string not null), `type` ('text' | 'image' | 'file'), `created_at`, `delivered_at`, `read_at`, `edited_at`, `deleted_at`
+**messages**: `id` (uuid, PK), `conversation_id` (FK), `sender_id` (FK), `content` (text, NOT NULL — use empty string not null), `type` ('text' | 'image' | 'file'), `created_at`, `delivered_at`, `read_at`, `edited_at`, `deleted_at`
+
+**message_reactions**: `id` (uuid, PK), `message_id` (FK, CASCADE), `user_id` (FK, CASCADE), `emoji` (text), `created_at`. UNIQUE(message_id, user_id, emoji). Index on message_id.
 
 **RPC**: `find_direct_conversation(user_a, user_b)` — returns existing direct conversation between two users.
 
@@ -55,27 +60,40 @@ Chat/
 
 ## Implemented Features
 1. **Real-time messaging** — Socket.IO, conversation rooms
-2. **Read receipts** — ✓ sent, ✓✓ delivered, ✓✓ teal read. Auto-deliver on connect, bulk mark on reconnect
-3. **Unread count** — Teal badge pills in sidebar, scoped to conversationId
+2. **Read receipts** — WhatsApp-style SVG checkmarks: single grey ✓ sent, double grey ✓✓ delivered, double sky-blue (#53bdeb) ✓✓ read. Auto-deliver on connect, bulk mark on reconnect
+3. **Unread count** — Badge pills in sidebar, scoped to conversationId
 4. **Message editing & deletion** — Right-click context menu on own messages, inline edit bar, "This message was deleted"
 5. **Group chats** — Direct/Group tabs, multi-user search, purple avatar, sender names, user-specific rooms (`user:${userId}`)
 6. **File/image sharing** — Multer upload to Supabase Storage, inline images, download cards, max 10MB
-7. **User profiles** — Avatar upload, display name (7-day cooldown), bio (150 chars)
+7. **User profiles** — Avatar upload, display name (7-day cooldown), bio (150 chars). Edit own via sidebar click. View others via chat header click.
 8. **Delete chat / Leave group** — Right-click context menu, removes from conversation_members, cleans orphans
 9. **Login with username** — `identifier` field resolves username via profiles lookup
 10. **Mobile responsive** — SVG icons (not Unicode), flex layout fixes, text-overflow ellipsis
-11. **Message reactions** — 6 emoji reactions (👍❤️😂😮😢🔥), toggle on/off, reaction pills below messages, real-time broadcast. DB: `message_reactions` table (message_id, user_id, emoji, unique constraint). Socket: `reaction:toggle` / `reaction:updated`
+11. **Message reactions** — 6 emoji reactions (👍❤️😂😮😢🔥), toggle on/off, reaction pills below messages, real-time broadcast via socket
+12. **Light/Dark theme** — WhatsApp-style color palette. Light default. Toggle button (sun/moon SVG) in sidebar. Persisted in localStorage. CSS custom properties throughout.
+13. **View user profiles** — Click chat header in direct conversations to see other user's avatar + bio. Backend verifies shared conversation membership for privacy.
+
+## Theme Colors (WhatsApp-style)
+| Variable | Light | Dark |
+|---|---|---|
+| --bg-primary | #ffffff | #0b141a |
+| --bg-secondary | #f5f5f5 | #111b21 |
+| --bg-tertiary | #e8e8e8 | #202c33 |
+| --msg-mine | #d9fdd3 | #005c4b |
+| --msg-theirs | #ffffff | #202c33 |
+| --accent | #00a884 | #00a884 |
+| --read-blue | #53bdeb | #53bdeb |
+| --tick-default | #667781 | #8696a0 |
 
 ## Key Patterns & Gotchas
-
-- **Stale closures**: Socket listeners in Chat.jsx capture state at registration time. `activeConv` uses `useRef` (`activeConvRef`) to avoid stale reads.
-- **CORS**: Must include ALL HTTP methods used: `["GET", "POST", "PUT", "DELETE"]` in both Express CORS and Socket.IO CORS.
-- **CSS specificity**: `.message-input button` overrides specific classes — scope with `button[type="submit"]`.
-- **Supabase NOT NULL**: `messages.content` may have NOT NULL constraint — use `""` not `null` when clearing.
-- **Event propagation**: Context menus inside clickable parents need `e.stopPropagation()`.
-- **Unicode on mobile**: Symbols like `⏻` don't render — use inline SVGs.
-- **Socket rooms**: Users join `user:${userId}` (personal notifications) + all conversation rooms on connect.
+- **Stale closures**: Socket listeners in Chat.jsx use `useRef` (`activeConvRef`) to avoid stale state reads.
+- **CORS**: Must include ALL HTTP methods: `["GET", "POST", "PUT", "DELETE"]`.
+- **Supabase NOT NULL**: `messages.content` — use `""` not `null` when clearing.
+- **Event propagation**: Context menus / reaction pickers inside clickable parents need `e.stopPropagation()`.
+- **Unicode on mobile**: Don't render — use inline SVGs instead.
+- **Socket rooms**: Users join `user:${userId}` (personal) + all conversation rooms on connect.
 - **File messages**: `content` stores JSON string `{url, fileName, fileSize, mimeType}`, `type` is 'image' or 'file'.
+- **CSS specificity**: Scope button styles with attribute selectors like `button[type="submit"]`.
 
 ## Socket Events
 | Event | Direction | Purpose |
@@ -95,8 +113,8 @@ Chat/
 | `users:online` | Client→Server | Query online status (callback) |
 | `group:created` | Server→Client | New group notification (to `user:${uid}` rooms) |
 | `group:added` | Server→Client | Added to existing group |
-| `reaction:toggle` | Client→Server | Toggle emoji reaction on message |
-| `reaction:updated` | Server→Client | Broadcast updated reactions for a message |
+| `reaction:toggle` | Client→Server | Toggle emoji reaction `{ messageId, emoji, conversationId }` |
+| `reaction:updated` | Server→Client | Broadcast updated reactions `{ messageId, reactions: [{ emoji, users }] }` |
 
 ## REST API Endpoints
 | Method | Path | Auth | Purpose |
@@ -113,10 +131,11 @@ Chat/
 | POST | /chat/groups | Yes | Create group |
 | POST | /chat/groups/:id/members | Yes | Add members to group |
 | GET | /chat/groups/:id/members | Yes | Get group members |
-| GET | /chat/messages/:convId | Yes | Get messages (paginated, newest first) |
+| GET | /chat/messages/:convId | Yes | Get messages with reactions (paginated, newest first) |
 | POST | /chat/messages | Yes | Send message (REST, rarely used — socket preferred) |
 | POST | /chat/upload | Yes | Upload file (multipart) |
 | GET | /chat/find-user?q= | Yes | Find user by email or username |
+| GET | /chat/profile/:userId | Yes | Get user's public profile (verifies shared conversation) |
 
 ## Dependencies
 **Server**: express@5, socket.io@4, @supabase/supabase-js@2, cors, dotenv, multer@2, resend@6
@@ -138,8 +157,15 @@ Chat/
 - Git: descriptive commit messages, push to `origin/main`
 
 ## Git State
-Latest commit: `e8cfefa` — "fix: message delete not working"
-Pending: Message Reactions feature (implemented, not yet committed)
+Latest commit: `78e39ce` — "style: WhatsApp-style message bubbles"
+All features committed and pushed to origin/main.
+
+## Next Up: React Native Mobile App
+- New `mobile/` folder using **Expo** (React Native)
+- Reuses the **same backend** (Railway) — no server changes needed
+- Same Socket.IO events, same REST API, same database
+- Build APK via `eas build` (cloud, no Android Studio needed)
+- Web app in `client/` stays untouched
 
 ## Pending Feature: Message Search (approved, not yet implemented)
 - Search icon in sidebar header opens search input
@@ -148,3 +174,13 @@ Pending: Message Reactions feature (implemented, not yet committed)
 - Click result → opens that conversation
 - No new dependencies or DB changes
 - Files to modify: `server/src/routes/chat.js`, `client/src/components/Sidebar.jsx`, `client/src/services/api.js`, `client/src/App.css`
+
+## Architecture Review Notes (from senior review)
+**Critical issues identified:**
+- `GET /chat/conversations` has N+1 query problem (4 DB calls per conversation)
+- In-memory state (`onlineUsers`, `otpStore`) — single-process only, no Redis
+- No rate limiting on any endpoint
+- No message pagination on frontend (backend supports `before` cursor but client doesn't use it)
+- Socket.IO default in-memory adapter — can't scale horizontally
+- OTP store holds plaintext passwords in memory
+- No structured logging, no error tracking
