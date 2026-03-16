@@ -230,6 +230,63 @@ function setupSocket(server) {
       io.to(conversationId).emit("message:status", { conversationId, messageIds: ids, status: "read", timestamp: now });
     });
 
+    // Handle message reactions
+    socket.on("reaction:toggle", async ({ messageId, emoji, conversationId }, callback) => {
+      try {
+        if (!messageId || !emoji || !conversationId) return callback?.({ error: "Missing fields" });
+
+        // Verify membership
+        const { data: member } = await supabaseAdmin
+          .from("conversation_members")
+          .select("user_id")
+          .eq("conversation_id", conversationId)
+          .eq("user_id", userId)
+          .single();
+
+        if (!member) return callback?.({ error: "Not a member" });
+
+        // Check if reaction already exists
+        const { data: existing } = await supabaseAdmin
+          .from("message_reactions")
+          .select("id")
+          .eq("message_id", messageId)
+          .eq("user_id", userId)
+          .eq("emoji", emoji)
+          .single();
+
+        if (existing) {
+          await supabaseAdmin.from("message_reactions").delete().eq("id", existing.id);
+        } else {
+          const { error } = await supabaseAdmin.from("message_reactions").insert({
+            message_id: messageId,
+            user_id: userId,
+            emoji,
+          });
+          if (error) return callback?.({ error: error.message });
+        }
+
+        // Fetch updated reactions for this message
+        const { data: reactions } = await supabaseAdmin
+          .from("message_reactions")
+          .select("emoji, user_id, profiles:user_id(id, display_name)")
+          .eq("message_id", messageId);
+
+        // Group by emoji
+        const grouped = {};
+        for (const r of reactions || []) {
+          if (!grouped[r.emoji]) grouped[r.emoji] = [];
+          grouped[r.emoji].push(r.profiles);
+        }
+        const result = Object.entries(grouped).map(([emoji, users]) => ({ emoji, users }));
+
+        io.to(conversationId).emit("reaction:updated", { messageId, reactions: result });
+        callback?.({ success: true });
+      } catch (err) {
+        console.error("reaction:toggle error:", err);
+        callback?.({ error: "Server error" });
+      }
+    });
+
     // Typing indicators
     socket.on("typing:start", ({ conversationId }) => {
       socket.to(conversationId).emit("typing:start", { userId, conversationId });

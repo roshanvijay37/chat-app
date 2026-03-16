@@ -51,10 +51,13 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
   const [editingMsg, setEditingMsg] = useState(null);
   const [editText, setEditText] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null);
   const bottomRef = useRef(null);
   const typingTimeout = useRef(null);
   const fileInputRef = useRef(null);
   const isGroup = conversation?.type === "group";
+
+  const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
   useEffect(() => {
     if (!conversation) return;
@@ -129,10 +132,17 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
       );
     };
 
+    const handleReactionUpdated = ({ messageId, reactions }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, reactions } : m))
+      );
+    };
+
     socket.on("message:new", handleNew);
     socket.on("message:status", handleStatus);
     socket.on("message:updated", handleUpdated);
     socket.on("message:deleted", handleDeleted);
+    socket.on("reaction:updated", handleReactionUpdated);
     socket.on("typing:start", handleTypingStart);
     socket.on("typing:stop", handleTypingStop);
 
@@ -141,6 +151,7 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
       socket.off("message:status", handleStatus);
       socket.off("message:updated", handleUpdated);
       socket.off("message:deleted", handleDeleted);
+      socket.off("reaction:updated", handleReactionUpdated);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
@@ -181,6 +192,12 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
       conversationId: conversation.id,
     });
     setEditingMsg(null);
+  };
+
+  const toggleReaction = (msgId, emoji) => {
+    const socket = getSocket();
+    socket.emit("reaction:toggle", { messageId: msgId, emoji, conversationId: conversation.id });
+    setReactionPickerMsgId(null);
   };
 
   const handleDelete = (msg) => {
@@ -255,7 +272,7 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
         </div>
       </div>
 
-      <div className="messages" onClick={() => setMenuMsgId(null)}>
+      <div className="messages" onClick={() => { setMenuMsgId(null); setReactionPickerMsgId(null); }}>
         {messages.map((msg) => {
           const isMine = msg.sender_id === currentUser.id;
           const isDeleted = !!msg.deleted_at;
@@ -285,6 +302,23 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
                   )}
                 </>
               )}
+              {!isDeleted && msg.reactions?.length > 0 && (
+                <div className="reaction-pills">
+                  {msg.reactions.map((r) => {
+                    const iReacted = r.users.some((u) => u.id === currentUser.id);
+                    return (
+                      <button
+                        key={r.emoji}
+                        className={`reaction-pill ${iReacted ? "reacted" : ""}`}
+                        onClick={(e) => { e.stopPropagation(); toggleReaction(msg.id, r.emoji); }}
+                        title={r.users.map((u) => u.display_name).join(", ")}
+                      >
+                        {r.emoji} {r.users.length}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <span className="msg-time">
                 {msg.edited_at && !isDeleted && <span className="edited-label">edited</span>}
                 {new Date(msg.created_at).toLocaleTimeString([], {
@@ -297,6 +331,19 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
                 <div className="msg-menu" onClick={(e) => e.stopPropagation()}>
                   {msg.type === "text" && <button onClick={() => handleEdit(msg)}>✏️ Edit</button>}
                   <button onClick={() => handleDelete(msg)}>🗑️ Delete</button>
+                </div>
+              )}
+              {!isDeleted && (
+                <button
+                  className="reaction-trigger"
+                  onClick={(e) => { e.stopPropagation(); setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id); setMenuMsgId(null); }}
+                >☺</button>
+              )}
+              {reactionPickerMsgId === msg.id && (
+                <div className="reaction-picker" onClick={(e) => e.stopPropagation()}>
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button key={emoji} onClick={() => toggleReaction(msg.id, emoji)}>{emoji}</button>
+                  ))}
                 </div>
               )}
             </div>

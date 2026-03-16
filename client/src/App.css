@@ -597,6 +597,103 @@ body {
   opacity: 0.7;
 }
 
+/* Reactions */
+.reaction-trigger {
+  position: absolute;
+  top: 0.2rem;
+  opacity: 0;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: opacity 0.15s;
+  z-index: 5;
+}
+
+.message.mine .reaction-trigger { left: -32px; }
+.message.theirs .reaction-trigger { right: -32px; }
+
+.message:hover .reaction-trigger { opacity: 1; }
+
+.reaction-trigger:hover { background: #2a2a3e; }
+
+.reaction-picker {
+  position: absolute;
+  top: -2.2rem;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 0.2rem 0.3rem;
+  display: flex;
+  gap: 0.1rem;
+  z-index: 15;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.message.mine .reaction-picker { right: 0; }
+.message.theirs .reaction-picker { left: 0; }
+
+.reaction-picker button {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  border-radius: 6px;
+  transition: transform 0.1s;
+}
+
+.reaction-picker button:hover {
+  background: #2a2a3e;
+  transform: scale(1.25);
+}
+
+.reaction-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.reaction-pill:hover { background: rgba(255,255,255,0.15); }
+
+.reaction-pill.reacted {
+  border-color: #00d4aa;
+  background: rgba(0,212,170,0.15);
+}
+
+.message.mine .reaction-pill {
+  background: rgba(0,0,0,0.12);
+  border-color: rgba(0,0,0,0.2);
+  color: #111;
+}
+
+.message.mine .reaction-pill:hover { background: rgba(0,0,0,0.2); }
+
+.message.mine .reaction-pill.reacted {
+  border-color: #065f46;
+  background: rgba(6,95,70,0.3);
+}
+
 .attach-btn {
   background: none;
   border: none;

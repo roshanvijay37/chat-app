@@ -392,6 +392,32 @@ router.get("/messages/:conversationId", authMiddleware, async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
 
+  // Fetch reactions for these messages
+  if (messages?.length) {
+    const msgIds = messages.map((m) => m.id);
+    const { data: reactions } = await supabaseAdmin
+      .from("message_reactions")
+      .select("message_id, emoji, user_id, profiles:user_id(id, display_name)")
+      .in("message_id", msgIds);
+
+    if (reactions?.length) {
+      const byMsg = {};
+      for (const r of reactions) {
+        if (!byMsg[r.message_id]) byMsg[r.message_id] = {};
+        if (!byMsg[r.message_id][r.emoji]) byMsg[r.message_id][r.emoji] = [];
+        byMsg[r.message_id][r.emoji].push(r.profiles);
+      }
+      for (const msg of messages) {
+        const grouped = byMsg[msg.id];
+        msg.reactions = grouped
+          ? Object.entries(grouped).map(([emoji, users]) => ({ emoji, users }))
+          : [];
+      }
+    } else {
+      messages.forEach((m) => (m.reactions = []));
+    }
+  }
+
   res.json(messages);
 });
 
