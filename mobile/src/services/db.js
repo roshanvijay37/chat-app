@@ -1,8 +1,14 @@
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
+
+let SQLite = null;
+if (Platform.OS !== 'web') {
+  SQLite = require('expo-sqlite');
+}
 
 let db = null;
 
 export async function initDB() {
+  if (!SQLite) return null;
   if (db) return db;
   db = await SQLite.openDatabaseAsync('cache.db');
   await db.execAsync(`
@@ -34,12 +40,14 @@ export async function initDB() {
 
 export async function getCachedUser() {
   const d = await initDB();
+  if (!d) return null;
   const row = await d.getFirstAsync('SELECT data FROM cached_user LIMIT 1');
   return row ? JSON.parse(row.data) : null;
 }
 
 export async function setCachedUser(user) {
   const d = await initDB();
+  if (!d) return;
   await d.runAsync(
     'INSERT OR REPLACE INTO cached_user (id, data, updated_at) VALUES (?, ?, ?)',
     [user.id, JSON.stringify(user), Date.now()]
@@ -48,6 +56,7 @@ export async function setCachedUser(user) {
 
 export async function clearCachedUser() {
   const d = await initDB();
+  if (!d) return;
   await d.runAsync('DELETE FROM cached_user');
 }
 
@@ -55,6 +64,7 @@ export async function clearCachedUser() {
 
 export async function getCachedConversations(userId) {
   const d = await initDB();
+  if (!d) return [];
   const rows = await d.getAllAsync(
     'SELECT data FROM conversations WHERE user_id = ? ORDER BY updated_at DESC',
     [userId]
@@ -64,6 +74,7 @@ export async function getCachedConversations(userId) {
 
 export async function setCachedConversations(userId, conversations) {
   const d = await initDB();
+  if (!d) return;
   await d.runAsync('DELETE FROM conversations WHERE user_id = ?', [userId]);
   for (const c of conversations) {
     await d.runAsync(
@@ -77,6 +88,7 @@ export async function setCachedConversations(userId, conversations) {
 
 export async function getCachedMessages(conversationId, userId) {
   const d = await initDB();
+  if (!d) return [];
   const rows = await d.getAllAsync(
     'SELECT data FROM messages WHERE conversation_id = ? AND user_id = ? ORDER BY created_at ASC',
     [conversationId, userId]
@@ -86,6 +98,7 @@ export async function getCachedMessages(conversationId, userId) {
 
 export async function setCachedMessages(conversationId, userId, messages) {
   const d = await initDB();
+  if (!d) return;
   await d.runAsync(
     'DELETE FROM messages WHERE conversation_id = ? AND user_id = ?',
     [conversationId, userId]
@@ -101,6 +114,7 @@ export async function setCachedMessages(conversationId, userId, messages) {
 
 export async function appendCachedMessage(conversationId, userId, msg) {
   const d = await initDB();
+  if (!d) return;
   const ts = new Date(msg.created_at).getTime() || Date.now();
   await d.runAsync(
     'INSERT OR REPLACE INTO messages (id, conversation_id, user_id, data, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -110,6 +124,7 @@ export async function appendCachedMessage(conversationId, userId, msg) {
 
 export async function updateCachedMessage(msgId, updatedMsg) {
   const d = await initDB();
+  if (!d) return;
   const row = await d.getFirstAsync('SELECT data, conversation_id, user_id FROM messages WHERE id = ?', [msgId]);
   if (!row) return;
   const existing = JSON.parse(row.data);
@@ -124,6 +139,7 @@ export async function updateCachedMessage(msgId, updatedMsg) {
 
 export async function clearUserCache(userId) {
   const d = await initDB();
+  if (!d) return;
   await d.runAsync('DELETE FROM conversations WHERE user_id = ?', [userId]);
   await d.runAsync('DELETE FROM messages WHERE user_id = ?', [userId]);
 }
@@ -132,5 +148,6 @@ export async function clearUserCache(userId) {
 
 export async function clearAllCache() {
   const d = await initDB();
+  if (!d) return;
   await d.execAsync('DELETE FROM cached_user; DELETE FROM conversations; DELETE FROM messages;');
 }

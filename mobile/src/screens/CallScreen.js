@@ -1,9 +1,13 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RTCView } from 'react-native-webrtc';
 import { useCall } from '../context/CallContext';
 import { useTheme } from '../context/ThemeContext';
+
+let RTCView = null;
+if (Platform.OS !== 'web') {
+  RTCView = require('react-native-webrtc').RTCView;
+}
 
 export default function CallScreen({ navigation }) {
   const {

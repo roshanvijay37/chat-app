@@ -313,10 +313,10 @@ export default function ChatScreen({ route, navigation }) {
           </TouchableOpacity>
           {!isGroup && (
             <View style={s.callBtns}>
-              <TouchableOpacity onPress={() => { startCall(conversation.participant, 'voice'); navigation.navigate('Call'); }} style={s.callBtn}>
+              <TouchableOpacity onPress={async () => { await startCall(conversation.participant, 'voice'); navigation.navigate('Call'); }} style={s.callBtn}>
                 <Text style={{ fontSize: 20 }}>📞</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { startCall(conversation.participant, 'video'); navigation.navigate('Call'); }} style={s.callBtn}>
+              <TouchableOpacity onPress={async () => { await startCall(conversation.participant, 'video'); navigation.navigate('Call'); }} style={s.callBtn}>
                 <Text style={{ fontSize: 20 }}>📹</Text>
               </TouchableOpacity>
             </View>

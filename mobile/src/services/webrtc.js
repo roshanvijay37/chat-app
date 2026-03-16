@@ -1,9 +1,14 @@
-import {
-  RTCPeerConnection,
-  RTCSessionDescription,
-  RTCIceCandidate,
-  mediaDevices,
-} from 'react-native-webrtc';
+import { Platform } from 'react-native';
+
+let RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, mediaDevices;
+
+if (Platform.OS !== 'web') {
+  const webrtc = require('react-native-webrtc');
+  RTCPeerConnection = webrtc.RTCPeerConnection;
+  RTCSessionDescription = webrtc.RTCSessionDescription;
+  RTCIceCandidate = webrtc.RTCIceCandidate;
+  mediaDevices = webrtc.mediaDevices;
+}
 
 const ICE_SERVERS = {
   iceServers: [
@@ -17,6 +22,7 @@ let localStream = null;
 let remoteStream = null;
 
 export async function getLocalStream(isVideo = true) {
+  if (!mediaDevices) return null;
   const constraints = {
     audio: true,
     video: isVideo ? { facingMode: 'user', width: 640, height: 480 } : false,
@@ -26,22 +32,20 @@ export async function getLocalStream(isVideo = true) {
 }
 
 export function createPeerConnection(onRemoteStream, onIceCandidate) {
+  if (!RTCPeerConnection) return null;
   peerConnection = new RTCPeerConnection(ICE_SERVERS);
 
-  // Add local tracks to connection
   if (localStream) {
     localStream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, localStream);
     });
   }
 
-  // Handle remote stream
   peerConnection.ontrack = (event) => {
     remoteStream = event.streams[0];
     onRemoteStream?.(remoteStream);
   };
 
-  // Handle ICE candidates
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
       onIceCandidate?.(event.candidate);
@@ -85,7 +89,7 @@ export function toggleMute() {
   const audioTrack = localStream.getAudioTracks()[0];
   if (audioTrack) {
     audioTrack.enabled = !audioTrack.enabled;
-    return !audioTrack.enabled; // returns true if muted
+    return !audioTrack.enabled;
   }
   return false;
 }
@@ -95,7 +99,7 @@ export function toggleCamera() {
   const videoTrack = localStream.getVideoTracks()[0];
   if (videoTrack) {
     videoTrack.enabled = !videoTrack.enabled;
-    return !videoTrack.enabled; // returns true if camera off
+    return !videoTrack.enabled;
   }
   return false;
 }
