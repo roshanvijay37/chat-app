@@ -462,7 +462,7 @@ body {
   justify-content: flex-end;
   gap: 0.3rem;
   font-size: 0.65rem;
-  opacity: 0.6;
+  opacity: 0.7;
   margin-top: 0.2rem;
 }
 
@@ -474,8 +474,9 @@ body {
 
 .msg-status.sent { color: inherit; }
 .msg-status.delivered { color: inherit; }
-.msg-status.read { color: #00d4aa; opacity: 1; }
-.message.mine .msg-status.read { color: #065f46; }
+.msg-status.read { color: #00d4aa; }
+.message.mine .msg-status.read { color: #004d40; }
+.message:has(.msg-status.read) .msg-time { opacity: 1; }
 
 .message { position: relative; }
 
