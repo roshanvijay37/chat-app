@@ -42,14 +42,7 @@
       }
     },
     "plugins": [
-      "expo-sqlite",
-      [
-        "react-native-webrtc",
-        {
-          "cameraPermission": "This app needs camera access for video calls",
-          "microphonePermission": "This app needs microphone access for voice and video calls"
-        }
-      ]
+      "expo-sqlite"
     ]
   }
 }
