@@ -345,6 +345,37 @@ router.post("/upload", authMiddleware, (req, res, next) => {
   res.status(201).json(message);
 });
 
+// GET /chat/profile/:userId - Get a user's public profile
+router.get("/profile/:userId", authMiddleware, async (req, res) => {
+  const { userId } = req.params;
+
+  // Verify they share at least one conversation
+  const { data: myConvs } = await supabaseAdmin
+    .from("conversation_members")
+    .select("conversation_id")
+    .eq("user_id", req.user.id);
+
+  if (!myConvs?.length) return res.status(403).json({ error: "No shared conversations" });
+
+  const { data: shared } = await supabaseAdmin
+    .from("conversation_members")
+    .select("conversation_id")
+    .eq("user_id", userId)
+    .in("conversation_id", myConvs.map((m) => m.conversation_id))
+    .limit(1);
+
+  if (!shared?.length) return res.status(403).json({ error: "No shared conversations" });
+
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, display_name, avatar_url, bio")
+    .eq("id", userId)
+    .single();
+
+  if (error || !profile) return res.status(404).json({ error: "Profile not found" });
+  res.json(profile);
+});
+
 // GET /chat/find-user - Find a user by email or username
 router.get("/find-user", authMiddleware, async (req, res) => {
   const { q } = req.query;

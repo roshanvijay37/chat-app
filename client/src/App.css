@@ -892,6 +892,80 @@ body {
   color: var(--text-primary);
 }
 
+/* View Profile Modal */
+.view-profile-card {
+  text-align: center;
+  padding: 2rem;
+}
+
+.view-profile-avatar {
+  margin-bottom: 1rem;
+}
+
+.view-profile-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.view-profile-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--msg-mine-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 auto;
+}
+
+.view-profile-name {
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.view-profile-bio {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 1.5rem;
+  white-space: pre-wrap;
+}
+
+.view-profile-close {
+  padding: 0.6rem 2rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.view-profile-close:hover {
+  background: var(--border-color);
+}
+
+.chat-header-clickable {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.chat-header-clickable.clickable {
+  cursor: pointer;
+}
+
+.chat-header-clickable.clickable:hover {
+  opacity: 0.8;
+}
+
 .typing-indicator {
   font-size: 0.8rem;
   color: var(--accent);

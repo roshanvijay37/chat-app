@@ -42,7 +42,7 @@ function FileMessage({ msg, isMine }) {
   );
 }
 
-export default function ChatWindow({ conversation, currentUser, onBack }) {
+export default function ChatWindow({ conversation, currentUser, onBack, onViewProfile }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -259,16 +259,21 @@ export default function ChatWindow({ conversation, currentUser, onBack }) {
     <div className="chat-window">
       <div className="chat-header">
         {onBack && <button className="back-btn" onClick={onBack}>←</button>}
-        {headerAvatarUrl ? (
-          <img src={headerAvatarUrl} alt="" className={`conv-avatar-img ${isGroup ? "group" : ""}`} />
-        ) : (
-          <div className={`conv-avatar ${isGroup ? "group" : ""}`}>
-            {headerInitial}
+        <div
+          className={`chat-header-clickable ${isGroup ? "" : "clickable"}`}
+          onClick={() => !isGroup && conversation.participant?.id && onViewProfile?.(conversation.participant.id)}
+        >
+          {headerAvatarUrl ? (
+            <img src={headerAvatarUrl} alt="" className={`conv-avatar-img ${isGroup ? "group" : ""}`} />
+          ) : (
+            <div className={`conv-avatar ${isGroup ? "group" : ""}`}>
+              {headerInitial}
+            </div>
+          )}
+          <div className="chat-header-info">
+            <span>{headerName}</span>
+            {headerSub && <span className="chat-header-sub">{headerSub}</span>}
           </div>
-        )}
-        <div className="chat-header-info">
-          <span>{headerName}</span>
-          {headerSub && <span className="chat-header-sub">{headerSub}</span>}
         </div>
       </div>
 

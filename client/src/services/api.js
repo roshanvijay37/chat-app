@@ -81,6 +81,11 @@ export const api = {
       headers: headers(),
     }).then((r) => r.json()),
 
+  getProfile: (userId) =>
+    fetch(`${API}/chat/profile/${userId}`, {
+      headers: headers(),
+    }).then((r) => r.json()),
+
   uploadFile: (conversationId, file) => {
     const formData = new FormData();
     formData.append("file", file);
