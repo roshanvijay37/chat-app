@@ -46,9 +46,13 @@ export default function Chat() {
   }, []);
 
   const activeConvRef = useRef(null);
+  const conversationsRef = useRef([]);
   useEffect(() => {
     activeConvRef.current = activeConv;
   }, [activeConv]);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -182,7 +186,7 @@ export default function Chat() {
   }, [user.id]);
 
   function findUserName(userId) {
-    for (const c of conversations) {
+    for (const c of conversationsRef.current) {
       if (c.participant?.id === userId) return c.participant.display_name;
       if (c.members) {
         const m = c.members.find((m) => m.id === userId);
