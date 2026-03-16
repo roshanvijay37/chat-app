@@ -56,7 +56,7 @@ function FileMessage({ msg, isMine }) {
   );
 }
 
-export default function ChatWindow({ conversation, currentUser, onBack, onViewProfile }) {
+export default function ChatWindow({ conversation, currentUser, onBack, onViewProfile, onStartCall }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -268,6 +268,7 @@ export default function ChatWindow({ conversation, currentUser, onBack, onViewPr
   }
 
   const headerAvatarUrl = isGroup ? null : conversation.participant?.avatar_url;
+  const is1on1 = !isGroup && conversation.participant?.id;
 
   return (
     <div className="chat-window">
@@ -289,6 +290,12 @@ export default function ChatWindow({ conversation, currentUser, onBack, onViewPr
             {headerSub && <span className="chat-header-sub">{headerSub}</span>}
           </div>
         </div>
+        {is1on1 && onStartCall && (
+          <div className="call-buttons">
+            <button className="call-header-btn" title="Voice call" onClick={() => onStartCall(conversation.participant.id, headerName, "voice")}>📞</button>
+            <button className="call-header-btn" title="Video call" onClick={() => onStartCall(conversation.participant.id, headerName, "video")}>📹</button>
+          </div>
+        )}
       </div>
 
       <div className="messages" onClick={() => { setMenuMsgId(null); setReactionPickerMsgId(null); }}>
