@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, Pressable, Keyboard
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +47,7 @@ export default function ChatScreen({ route, navigation }) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { startCall } = useCall();
+  const insets = useSafeAreaInsets();
   const isGroup = conversation?.type === 'group';
 
   // Cache-first message loading
@@ -335,7 +336,7 @@ export default function ChatScreen({ route, navigation }) {
           ListFooterComponent={typing ? <Text style={[s.typing, { color: theme.accent }]}>typing...</Text> : null}
         />
 
-        <View style={[s.inputRow, { backgroundColor: theme.bgSecondary, borderTopColor: theme.borderLight }]}>
+        <View style={[s.inputRow, { backgroundColor: theme.bgSecondary, borderTopColor: theme.borderLight, paddingBottom: Math.max(8, insets.bottom) }]}>
           <TouchableOpacity onPress={pickImage} disabled={uploading} style={s.attachBtn}>
             <Text style={{ fontSize: 22 }}>{uploading ? '⏳' : '🖼️'}</Text>
           </TouchableOpacity>

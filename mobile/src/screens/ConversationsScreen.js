@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -14,6 +14,7 @@ export default function ConversationsScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { theme, isDark, toggleTheme } = useTheme();
   const initialLoad = useRef(true);
+  const insets = useSafeAreaInsets();
 
   // Load cached first, then fetch fresh
   const loadConversations = async (showRefresh = false) => {
@@ -53,15 +54,19 @@ export default function ConversationsScreen({ navigation }) {
       setConversations((prev) => {
         const updated = prev.map((c) => {
           if (c.id !== msg.conversation_id) return c;
+          const newMsg = { id: msg.id, content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id, type: msg.type };
+          const curUnread = c.unread_count || c.unreadCount || 0;
           return {
             ...c,
-            last_message: { id: msg.id, content: msg.content, created_at: msg.created_at, sender_id: msg.sender_id, type: msg.type },
-            unread_count: msg.sender_id !== user.id ? (c.unread_count || 0) + 1 : c.unread_count,
+            lastMessage: newMsg,
+            last_message: newMsg,
+            unreadCount: msg.sender_id !== user.id ? curUnread + 1 : curUnread,
+            unread_count: msg.sender_id !== user.id ? curUnread + 1 : curUnread,
           };
         });
         return updated.sort((a, b) => {
-          const timeA = a.last_message?.created_at || '0';
-          const timeB = b.last_message?.created_at || '0';
+          const timeA = a.lastMessage?.created_at || a.last_message?.created_at || '0';
+          const timeB = b.lastMessage?.created_at || b.last_message?.created_at || '0';
           return timeB.localeCompare(timeA);
         });
       });
@@ -69,7 +74,7 @@ export default function ConversationsScreen({ navigation }) {
 
     const handleStatus = ({ conversationId, status }) => {
       if (status === 'read') {
-        setConversations((prev) => prev.map((c) => (c.id === conversationId ? { ...c, unread_count: 0 } : c)));
+        setConversations((prev) => prev.map((c) => (c.id === conversationId ? { ...c, unread_count: 0, unreadCount: 0 } : c)));
       }
     };
 
@@ -103,7 +108,7 @@ export default function ConversationsScreen({ navigation }) {
   };
 
   const getPreview = (c) => {
-    const msg = c.last_message;
+    const msg = c.last_message || c.lastMessage;
     if (!msg) return 'No messages yet';
     if (msg.deleted_at) return '🚫 Message deleted';
     if (msg.type === 'image') return '🖼️ Photo';
@@ -129,9 +134,9 @@ export default function ConversationsScreen({ navigation }) {
           <Text style={[s.name, { color: theme.text }]} numberOfLines={1}>{d.name}</Text>
           <Text style={[s.preview, { color: theme.textMuted }]} numberOfLines={1}>{getPreview(item)}</Text>
         </View>
-        {item.unread_count > 0 && (
+        {(item.unread_count || item.unreadCount) > 0 && (
           <View style={[s.badge, { backgroundColor: theme.accent }]}>
-            <Text style={s.badgeText}>{item.unread_count > 99 ? '99+' : item.unread_count}</Text>
+            <Text style={s.badgeText}>{(item.unread_count || item.unreadCount) > 99 ? '99+' : (item.unread_count || item.unreadCount)}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -167,6 +172,7 @@ export default function ConversationsScreen({ navigation }) {
         data={conversations}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
         ListEmptyComponent={<Text style={[s.empty, { color: theme.textMuted }]}>No conversations yet</Text>}
       />
