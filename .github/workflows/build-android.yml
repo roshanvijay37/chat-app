@@ -1,9 +1,16 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - development
 
 jobs:
   build:
@@ -39,13 +46,13 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Build APK
-        run: eas build -p android --profile preview --local --non-interactive --output ./app.apk
+        run: eas build -p android --profile ${{ inputs.profile }} --local --non-interactive --output ./app.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: chat-app
+          name: chat-app-${{ inputs.profile }}
           path: mobile/app.apk
           retention-days: 30
