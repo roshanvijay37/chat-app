@@ -11,14 +11,15 @@
   --text-muted: #888888;
   --border-color: #dddddd;
   --border-light: #eeeeee;
-  --accent: #00d4aa;
-  --accent-hover: #00b894;
+  --accent: #00a884;
+  --accent-hover: #008f72;
   --accent-dark: #004d40;
   --read-blue: #53bdeb;
-  --msg-mine: #00d4aa;
+  --msg-mine: #d9fdd3;
   --msg-mine-text: #111111;
-  --msg-theirs: #e8e8e8;
+  --msg-theirs: #ffffff;
   --msg-theirs-text: #111111;
+  --tick-default: #667781;
   --error: #dc3545;
   --group-color: #6c5ce7;
   --shadow: rgba(0,0,0,0.1);
@@ -28,23 +29,24 @@
 
 /* Theme Variables - Dark */
 [data-theme="dark"] {
-  --bg-primary: #111111;
-  --bg-secondary: #1a1a2e;
-  --bg-tertiary: #16213e;
-  --bg-input: #16213e;
-  --text-primary: #e1e1e1;
-  --text-secondary: #cccccc;
-  --text-muted: #888888;
-  --border-color: #333333;
-  --border-light: #2a2a3e;
-  --accent: #00d4aa;
-  --accent-hover: #00b894;
+  --bg-primary: #0b141a;
+  --bg-secondary: #111b21;
+  --bg-tertiary: #202c33;
+  --bg-input: #2a3942;
+  --text-primary: #e9edef;
+  --text-secondary: #d1d7db;
+  --text-muted: #8696a0;
+  --border-color: #313d45;
+  --border-light: #222e35;
+  --accent: #00a884;
+  --accent-hover: #008f72;
   --accent-dark: #004d40;
   --read-blue: #53bdeb;
-  --msg-mine: #00d4aa;
-  --msg-mine-text: #111111;
-  --msg-theirs: #1a1a2e;
-  --msg-theirs-text: #e1e1e1;
+  --msg-mine: #005c4b;
+  --msg-mine-text: #e9edef;
+  --msg-theirs: #202c33;
+  --msg-theirs-text: #e9edef;
+  --tick-default: #8696a0;
   --error: #ff6b6b;
   --group-color: #6c5ce7;
   --shadow: rgba(0,0,0,0.4);
@@ -507,6 +509,7 @@ body {
   background: var(--msg-theirs);
   color: var(--msg-theirs-text);
   border-bottom-left-radius: 4px;
+  border: 1px solid var(--border-light);
 }
 
 .msg-time {
@@ -530,8 +533,8 @@ body {
   height: 11px;
 }
 
-.msg-status.sent svg { color: rgba(0,0,0,0.5); }
-.msg-status.delivered svg { color: rgba(0,0,0,0.5); }
+.msg-status.sent svg { color: var(--tick-default); }
+.msg-status.delivered svg { color: var(--tick-default); }
 .msg-status.read svg { color: var(--read-blue); }
 
 .message { position: relative; }
