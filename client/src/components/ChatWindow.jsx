@@ -3,9 +3,23 @@ import { api } from "../services/api";
 import { getSocket } from "../services/socket";
 
 function MessageStatus({ msg }) {
-  if (msg.read_at) return <span className="msg-status read" title="Read">✓✓</span>;
-  if (msg.delivered_at) return <span className="msg-status delivered" title="Delivered">✓✓</span>;
-  return <span className="msg-status sent" title="Sent">✓</span>;
+  // Single check for sent
+  const singleCheck = (
+    <svg viewBox="0 0 16 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 5.5L5.5 10L14.5 1" />
+    </svg>
+  );
+  // Double check for delivered/read
+  const doubleCheck = (
+    <svg viewBox="0 0 16 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 5.5L4 8.5L10 2.5" />
+      <path d="M5 5.5L8 8.5L14 2.5" />
+    </svg>
+  );
+
+  if (msg.read_at) return <span className="msg-status read" title="Read">{doubleCheck}</span>;
+  if (msg.delivered_at) return <span className="msg-status delivered" title="Delivered">{doubleCheck}</span>;
+  return <span className="msg-status sent" title="Sent">{singleCheck}</span>;
 }
 
 function parseFileContent(content) {

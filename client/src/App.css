@@ -14,6 +14,7 @@
   --accent: #00d4aa;
   --accent-hover: #00b894;
   --accent-dark: #004d40;
+  --read-blue: #53bdeb;
   --msg-mine: #00d4aa;
   --msg-mine-text: #111111;
   --msg-theirs: #e8e8e8;
@@ -39,6 +40,7 @@
   --accent: #00d4aa;
   --accent-hover: #00b894;
   --accent-dark: #004d40;
+  --read-blue: #53bdeb;
   --msg-mine: #00d4aa;
   --msg-mine-text: #111111;
   --msg-theirs: #1a1a2e;
@@ -518,16 +520,19 @@ body {
 }
 
 .msg-status {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: -2px;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.2rem;
 }
 
-.msg-status.sent { color: inherit; }
-.msg-status.delivered { color: inherit; }
-.msg-status.read { color: var(--accent-dark); }
-.message.mine .msg-status.read { color: var(--accent-dark); }
-.message:has(.msg-status.read) .msg-time { opacity: 1; }
+.msg-status svg {
+  width: 16px;
+  height: 11px;
+}
+
+.msg-status.sent svg { color: rgba(0,0,0,0.5); }
+.msg-status.delivered svg { color: rgba(0,0,0,0.5); }
+.msg-status.read svg { color: var(--read-blue); }
 
 .message { position: relative; }
 
