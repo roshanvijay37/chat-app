@@ -11,26 +11,28 @@ Chat/
 ├── client/                        # React SPA (Vite) — Web frontend
 │   └── src/
 │       ├── components/
-│       │   ├── ChatWindow.jsx      # Messages, file/image rendering, edit/delete, typing, reactions, SVG read receipts
+│       │   ├── ChatWindow.jsx      # Messages, file/image, edit/delete, typing, reactions, SVG read receipts, call buttons (📞📹)
+│       │   ├── CallOverlay.jsx     # Full-screen call UI — incoming/outgoing/connected states, voice + video
 │       │   ├── Sidebar.jsx         # Conversation list, avatars, unread badges, new chat form, context menu, theme toggle
 │       │   ├── ProfileModal.jsx    # Edit own profile (avatar, display name with cooldown, bio)
 │       │   └── ViewProfileModal.jsx # Read-only profile view (avatar, name, bio) for other users
 │       ├── pages/
-│       │   ├── Chat.jsx            # Main page — conversations state, socket listeners, activeConv with useRef, viewProfile state
+│       │   ├── Chat.jsx            # Main page — conversations state, socket listeners, call state + WebRTC orchestration
 │       │   ├── Login.jsx           # Login with identifier (email or username)
 │       │   └── Signup.jsx          # Signup with OTP verification flow
 │       ├── services/
 │       │   ├── api.js              # All REST API calls (including getProfile)
-│       │   └── socket.js           # Socket.IO client singleton
+│       │   ├── socket.js           # Socket.IO client singleton
+│       │   └── webrtc.js           # Browser WebRTC service — native RTCPeerConnection, getUserMedia, ICE handling
 │       ├── context/
 │       │   ├── AuthContext.jsx      # Auth state — login, signup, verifyOtp, logout, refreshProfile
 │       │   └── ThemeContext.jsx     # Light/dark theme toggle, persisted in localStorage
 │       ├── App.jsx                 # Routes: /login, /signup, / (protected). Wrapped in ThemeProvider + AuthProvider
-│       └── App.css                 # WhatsApp-style theme with CSS variables, light (default) + dark mode
+│       └── App.css                 # WhatsApp-style theme with CSS variables, light/dark mode, call overlay styles
 ├── server/
 │   └── src/
 │       ├── index.js                # Express setup, CORS (GET/POST/PUT/DELETE), static serving, Socket.IO
-│       ├── socket.js               # All socket handlers (message CRUD, delivery/read, typing, online tracking, reactions)
+│       ├── socket.js               # All socket handlers (message CRUD, delivery/read, typing, online, reactions, call signaling)
 │       ├── routes/
 │       │   ├── auth.js             # signup (OTP), verify-otp, login (email/username), /me, logout, PUT /profile
 │       │   └── chat.js             # conversations CRUD, groups CRUD, messages (with reactions), file upload, find-user, profile/:userId, delete conv
@@ -38,7 +40,32 @@ Chat/
 │       │   └── supabase.js         # Two clients: anon (supabase) + service key (supabaseAdmin)
 │       └── middleware/
 │           └── auth.js             # JWT auth via supabase.auth.getUser
-├── mobile/                         # PLANNED — React Native + Expo (not yet created)
+├── mobile/                         # React Native + Expo mobile app
+│   ├── App.js                      # Navigation: AuthStack (Login/Signup) + AppStack (all screens). Providers: SafeArea, Theme, Auth, Call
+│   ├── app.json                    # Expo config: softwareKeyboardLayoutMode resize, camera/mic/audio permissions, expo-sqlite plugin
+│   ├── eas.json                    # EAS build profiles: development (dev client APK), preview (standalone APK), production
+│   └── src/
+│       ├── screens/
+│       │   ├── LoginScreen.js      # Login with password visibility toggle
+│       │   ├── SignupScreen.js     # Signup with OTP flow
+│       │   ├── ConversationsScreen.js # Cache-first loading, handles camelCase + snake_case fields
+│       │   ├── ChatScreen.js       # Cache-first messages, reactions (long-press), call buttons (📞📹), safe area insets
+│       │   ├── NewChatScreen.js    # Find user + start conversation
+│       │   ├── ProfileScreen.js    # Edit own profile
+│       │   ├── ViewProfileScreen.js # View other user's profile
+│       │   └── CallScreen.js       # Incoming/outgoing/connected states, RTCView (lazy-loaded), voice + video
+│       ├── services/
+│       │   ├── api.js              # REST client pointing to Railway URL
+│       │   ├── socket.js           # Socket.IO client singleton
+│       │   ├── webrtc.js           # WebRTC service with lazy-loaded react-native-webrtc imports
+│       │   └── db.js               # SQLite cache layer (lazy-load for web compat). Tables: cached_user, conversations, messages
+│       └── context/
+│           ├── AuthContext.js       # Cache-first auth with SQLite. Shows cached user instantly, verifies token in background
+│           ├── ThemeContext.js      # Light/dark themes matching web CSS variables, AsyncStorage persistence
+│           └── CallContext.js       # Global call state. Refs for stale closure fix. Polls for socket connection
+├── .github/
+│   └── workflows/
+│       └── build-android.yml       # GitHub Actions: manual trigger, EAS local build on ubuntu, uploads APK artifact
 └── package.json                    # Root scripts: build, start, dev
 ```
 
@@ -72,6 +99,11 @@ Chat/
 11. **Message reactions** — 6 emoji reactions (👍❤️😂😮😢🔥), toggle on/off, reaction pills below messages, real-time broadcast via socket
 12. **Light/Dark theme** — WhatsApp-style color palette. Light default. Toggle button (sun/moon SVG) in sidebar. Persisted in localStorage. CSS custom properties throughout.
 13. **View user profiles** — Click chat header in direct conversations to see other user's avatar + bio. Backend verifies shared conversation membership for privacy.
+14. **Voice/Video calls (mobile)** — 1-on-1 WebRTC calls via react-native-webrtc. Server relays signaling (call:initiate/accept/reject/end/ice-candidate/busy). CallContext for global state, CallScreen with incoming/outgoing/connected states. Call buttons in ChatScreen header.
+15. **Voice/Video calls (web)** — Browser-native WebRTC (no extra libraries). CallOverlay component with full-screen UI. Call state managed in Chat.jsx with refs to avoid stale closures. ICE candidate buffering. Same server signaling events as mobile — web ↔ mobile calls work cross-platform.
+16. **SQLite local caching (mobile)** — Cache-first strategy using expo-sqlite. Tables: cached_user, conversations, messages (keyed by user_id). Shows cached data instantly, syncs from server in background. Cache cleared on logout or different user login.
+17. **React Native mobile app** — Expo project in `mobile/`. All screens: Login, Signup, Conversations, Chat, NewChat, Profile, ViewProfile, Call. SafeAreaView on all screens. Password visibility toggle. Keyboard resize mode.
+18. **GitHub Actions CI/CD** — Manual trigger workflow for building Android APK using `eas build --local` on GitHub's Linux runner. Profile choice (preview/development). Uses EXPO_TOKEN secret. Uploads APK as artifact.
 
 ## Theme Colors (WhatsApp-style)
 | Variable | Light | Dark |
@@ -115,6 +147,16 @@ Chat/
 | `group:added` | Server→Client | Added to existing group |
 | `reaction:toggle` | Client→Server | Toggle emoji reaction `{ messageId, emoji, conversationId }` |
 | `reaction:updated` | Server→Client | Broadcast updated reactions `{ messageId, reactions: [{ emoji, users }] }` |
+| `call:initiate` | Client→Server | Start call `{ to, callType, offer }` → relayed as `call:incoming` |
+| `call:incoming` | Server→Client | Incoming call notification `{ from, callType, offer }` |
+| `call:accept` | Client→Server | Accept call `{ to, answer }` → relayed as `call:accepted` |
+| `call:accepted` | Server→Client | Call accepted `{ from, answer }` |
+| `call:reject` | Client→Server | Reject call `{ to }` → relayed as `call:rejected` |
+| `call:rejected` | Server→Client | Call rejected `{ from }` |
+| `call:end` | Client→Server | End call `{ to }` → relayed as `call:ended` |
+| `call:ended` | Server→Client | Call ended `{ from }` |
+| `call:ice-candidate` | Bidirectional | ICE candidate exchange `{ to/from, candidate }` |
+| `call:busy` | Bidirectional | User busy on another call `{ to/from }` |
 
 ## REST API Endpoints
 | Method | Path | Auth | Purpose |
@@ -140,6 +182,7 @@ Chat/
 ## Dependencies
 **Server**: express@5, socket.io@4, @supabase/supabase-js@2, cors, dotenv, multer@2, resend@6
 **Client**: react@19, react-dom@19, react-router-dom@7, socket.io-client@4, vite@7
+**Mobile**: expo, react-native, @react-navigation/native, @react-navigation/native-stack, socket.io-client, expo-sqlite, @react-native-async-storage/async-storage, react-native-webrtc, expo-dev-client, react-native-safe-area-context
 
 ## Environment Variables
 **Server** (.env): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `CLIENT_URL`, `PORT`
@@ -156,16 +199,27 @@ Chat/
 - Production-quality, scalable code expected
 - Git: descriptive commit messages, push to `origin/main`
 
+## Deployment & Build Info
+- **Railway URL**: `https://chat-app-production-6766.up.railway.app`
+- **Expo Account**: `r_o_shh` on expo.dev
+- **GitHub Repo**: `github.com/roshanvijay37/chat-app`
+- **Mobile Package**: `com.r_o_shh.mobile`
+- **EAS Project ID**: `412affcf-3b0f-4b76-8fb3-b2b353eb50d1`
+- **GitHub Actions**: Manual trigger workflow builds APK via `eas build --local` on ubuntu-latest. Uses `EXPO_TOKEN` secret.
+- **Local builds**: Not possible on Windows (`eas build --local` requires macOS/Linux). Use EAS cloud or GitHub Actions.
+- **Dev client**: Requires phone-to-PC LAN connection which doesn't work (firewall/network isolation).
+
 ## Git State
-Latest commit: `78e39ce` — "style: WhatsApp-style message bubbles"
+Latest commit: `3b478ce` — "feat: add voice/video calls to web client using browser WebRTC"
 All features committed and pushed to origin/main.
 
-## Next Up: React Native Mobile App
-- New `mobile/` folder using **Expo** (React Native)
-- Reuses the **same backend** (Railway) — no server changes needed
-- Same Socket.IO events, same REST API, same database
-- Build APK via `eas build` (cloud, no Android Studio needed)
-- Web app in `client/` stays untouched
+## Key Technical Notes
+- **Web ↔ Mobile calls**: Both use standard WebRTC + same server signaling events. Cross-platform calls work.
+- **ICE candidate buffering**: Both web and mobile buffer ICE candidates until remote description is set.
+- **Stale closure prevention**: Web uses refs (callPeerRef, callStateRef, activeConvRef). Mobile CallContext uses refs for socket handlers.
+- **Server camelCase vs mobile snake_case**: GET /conversations returns `lastMessage`/`unreadCount` (camelCase). Mobile handles both formats with fallbacks.
+- **Native module lazy-loading**: react-native-webrtc and expo-sqlite use `Platform.OS !== 'web'` checks to prevent crashes in web mode.
+- **Samsung S24 Ultra**: SafeAreaView + useSafeAreaInsets for punch-hole camera + gesture navigation.
 
 ## Pending Feature: Message Search (approved, not yet implemented)
 - Search icon in sidebar header opens search input
@@ -173,7 +227,6 @@ All features committed and pushed to origin/main.
 - Results: message snippet, sender name, conversation name/participant, timestamp
 - Click result → opens that conversation
 - No new dependencies or DB changes
-- Files to modify: `server/src/routes/chat.js`, `client/src/components/Sidebar.jsx`, `client/src/services/api.js`, `client/src/App.css`
 
 ## Architecture Review Notes (from senior review)
 **Critical issues identified:**
