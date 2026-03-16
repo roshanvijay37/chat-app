@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback } from "react";
 
 export default function CallOverlay({
-  callState, // "idle" | "outgoing" | "incoming" | "connected"
-  callType,  // "voice" | "video"
+  callState,
+  callType,
   remoteName,
   localStream,
   remoteStream,
@@ -14,19 +14,13 @@ export default function CallOverlay({
   onToggleMute,
   onToggleCamera,
 }) {
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
+  // Callback refs — attach stream the moment the <video> mounts
+  const localVideoRef = useCallback((node) => {
+    if (node && localStream) node.srcObject = localStream;
   }, [localStream]);
 
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
+  const remoteVideoRef = useCallback((node) => {
+    if (node && remoteStream) node.srcObject = remoteStream;
   }, [remoteStream]);
 
   if (callState === "idle") return null;
@@ -36,7 +30,6 @@ export default function CallOverlay({
 
   return (
     <div className="call-overlay">
-      {/* Video elements */}
       {isVideo && isConnected && (
         <>
           <video ref={remoteVideoRef} className="call-remote-video" autoPlay playsInline />
@@ -44,7 +37,6 @@ export default function CallOverlay({
         </>
       )}
 
-      {/* Voice call or waiting states */}
       {(!isVideo || !isConnected) && (
         <div className="call-info">
           <div className="call-avatar">{remoteName?.[0]?.toUpperCase() || "?"}</div>
@@ -54,14 +46,12 @@ export default function CallOverlay({
             {callState === "incoming" && `Incoming ${callType} call`}
             {isConnected && !isVideo && "Connected"}
           </div>
-          {/* Show local video preview while waiting on video call */}
           {isVideo && !isConnected && localStream && (
             <video ref={localVideoRef} className="call-preview-video" autoPlay playsInline muted />
           )}
         </div>
       )}
 
-      {/* Controls */}
       <div className="call-controls">
         {callState === "incoming" ? (
           <>
