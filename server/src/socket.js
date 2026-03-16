@@ -305,6 +305,37 @@ function setupSocket(server) {
       callback?.(statuses);
     });
 
+    // ---- Voice/Video Call Signaling ----
+
+    socket.on("call:initiate", ({ to, callType, offer }) => {
+      // to = recipient userId, callType = 'voice' | 'video'
+      io.to(`user:${to}`).emit("call:incoming", {
+        from: userId,
+        callType,
+        offer,
+      });
+    });
+
+    socket.on("call:accept", ({ to, answer }) => {
+      io.to(`user:${to}`).emit("call:accepted", { from: userId, answer });
+    });
+
+    socket.on("call:reject", ({ to }) => {
+      io.to(`user:${to}`).emit("call:rejected", { from: userId });
+    });
+
+    socket.on("call:end", ({ to }) => {
+      io.to(`user:${to}`).emit("call:ended", { from: userId });
+    });
+
+    socket.on("call:ice-candidate", ({ to, candidate }) => {
+      io.to(`user:${to}`).emit("call:ice-candidate", { from: userId, candidate });
+    });
+
+    socket.on("call:busy", ({ to }) => {
+      io.to(`user:${to}`).emit("call:busy", { from: userId });
+    });
+
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${userId}`);
       onlineUsers.get(userId)?.delete(socket.id);

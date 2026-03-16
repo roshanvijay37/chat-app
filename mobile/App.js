@@ -1,10 +1,11 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { CallProvider, useCall } from './src/context/CallContext';
 import { View, ActivityIndicator } from 'react-native';
 
 import LoginScreen from './src/screens/LoginScreen';
@@ -14,6 +15,7 @@ import ChatScreen from './src/screens/ChatScreen';
 import NewChatScreen from './src/screens/NewChatScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ViewProfileScreen from './src/screens/ViewProfileScreen';
+import CallScreen from './src/screens/CallScreen';
 
 const Stack = createStackNavigator();
 
@@ -34,8 +36,23 @@ function AppStack() {
       <Stack.Screen name="NewChat" component={NewChatScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="ViewProfile" component={ViewProfileScreen} />
+      <Stack.Screen name="Call" component={CallScreen} options={{ gestureEnabled: false }} />
     </Stack.Navigator>
   );
+}
+
+// Auto-navigate to CallScreen on incoming calls
+function IncomingCallHandler() {
+  const { callState } = useCall();
+  const navigation = useNavigation();
+
+  React.useEffect(() => {
+    if (callState === 'incoming') {
+      navigation.navigate('Call');
+    }
+  }, [callState]);
+
+  return null;
 }
 
 function RootNavigator() {
@@ -54,7 +71,14 @@ function RootNavigator() {
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <NavigationContainer>
-        {user ? <AppStack /> : <AuthStack />}
+        {user ? (
+          <>
+            <AppStack />
+            <IncomingCallHandler />
+          </>
+        ) : (
+          <AuthStack />
+        )}
       </NavigationContainer>
     </>
   );
@@ -65,7 +89,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RootNavigator />
+          <CallProvider>
+            <RootNavigator />
+          </CallProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

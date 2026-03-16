@@ -12,7 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access for video calls",
+        "NSMicrophoneUsageDescription": "This app needs microphone access for voice and video calls"
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
@@ -22,7 +26,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.r_o_shh.mobile"
+      "package": "com.r_o_shh.mobile",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +42,14 @@
       }
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "react-native-webrtc",
+        {
+          "cameraPermission": "This app needs camera access for video calls",
+          "microphonePermission": "This app needs microphone access for voice and video calls"
+        }
+      ]
     ]
   }
 }

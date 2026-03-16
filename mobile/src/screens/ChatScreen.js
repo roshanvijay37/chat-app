@@ -8,6 +8,7 @@ import { api } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useCall } from '../context/CallContext';
 import { getCachedMessages, setCachedMessages, appendCachedMessage, updateCachedMessage } from '../services/db';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -45,6 +46,7 @@ export default function ChatScreen({ route, navigation }) {
   const initialLoad = useRef(true);
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { startCall } = useCall();
   const isGroup = conversation?.type === 'group';
 
   // Cache-first message loading
@@ -308,6 +310,16 @@ export default function ChatScreen({ route, navigation }) {
               {isGroup && <Text style={{ fontSize: 12, color: theme.textMuted }}>{conversation.members?.length || 0} members</Text>}
             </View>
           </TouchableOpacity>
+          {!isGroup && (
+            <View style={s.callBtns}>
+              <TouchableOpacity onPress={() => { startCall(conversation.participant, 'voice'); navigation.navigate('Call'); }} style={s.callBtn}>
+                <Text style={{ fontSize: 20 }}>📞</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { startCall(conversation.participant, 'video'); navigation.navigate('Call'); }} style={s.callBtn}>
+                <Text style={{ fontSize: 20 }}>📹</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <FlatList
@@ -356,6 +368,8 @@ const s = StyleSheet.create({
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   headerName: { fontWeight: '600', fontSize: 16 },
+  callBtns: { flexDirection: 'row', marginLeft: 'auto' },
+  callBtn: { padding: 8 },
   msgRow: { marginBottom: 6 },
   msgRowMine: { alignItems: 'flex-end' },
   msgRowTheirs: { alignItems: 'flex-start' },
